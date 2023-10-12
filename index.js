@@ -6,7 +6,7 @@ const { connectDb } = require('./db/config.js');
 
 const app = express();
 
-connectDb();
+await connectDb();
 
 app.use(cors());
 app.use(express.static(path.join(__dirname, 'public')));
