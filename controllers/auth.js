@@ -21,6 +21,7 @@ module.exports.login = async (req = request, res = response) => {
         }
 
         const coinciden = await compare(password, usuario.password);
+
         if (!coinciden) {
             return res.status(401).json({
                 ok: false,
@@ -28,10 +29,11 @@ module.exports.login = async (req = request, res = response) => {
             });
         }
 
-        const token = await crearJwt(usuario.id);
+        const token = await crearJwt('6529908ba6cf93a65f484cf4');
         const { iat, exp } = await extraerDatosJwt(token);
 
         res.status(200).json({
+            ok: true,
             usuario: {
                 nombres: usuario.nombres,
                 apellidoPaterno: usuario.apellidoPaterno,
@@ -49,7 +51,30 @@ module.exports.login = async (req = request, res = response) => {
 
         res.status(500).json({
             ok: false,
-            message: 'Algo salió mal al autenticarse, intenté de nuevo y si el fallo persiste contacte al administrador'
+            message: 'Algo salió mal al autenticarse, intente de nuevo y si el fallo persiste contacte al administrador'
+        });
+    }
+}
+
+module.exports.renovarToken = async (req = request, res = response) => {
+    const { uId } = req;
+    try {
+        const token = await crearJwt(uId);
+        const { iat, exp } = await extraerDatosJwt(token);
+
+        res.status(200).json({
+            ok: true,
+            token,
+            fechaCreacionToken: `${new Date(iat * 1000).getDate()}/${new Date(iat * 1000).getMonth() + 1}/${new Date(iat * 1000).getHours()}:${new Date(iat * 1000).getMinutes()}`,
+            fechaExpiracionToken: `${new Date(exp * 1000).getDate()}/${new Date(exp * 1000).getMonth() + 1}/${new Date(exp * 1000).getHours()}:${new Date(exp * 1000).getMinutes()}`
+        });
+
+    } catch (error) {
+        console.log(error);
+
+        res.status(500).json({
+            ok: false,
+            message: 'Algo salió mal al renovar el token, intente de nuevo y si el fallo persiste contacte al administrador'
         });
     }
 }
