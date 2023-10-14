@@ -29,7 +29,7 @@ module.exports.login = async (req = request, res = response) => {
             });
         }
 
-        const token = await crearJwt('6529908ba6cf93a65f484cf4');
+        const token = await crearJwt(usuario.id);
         const { iat, exp } = await extraerDatosJwt(token);
 
         res.status(200).json({
