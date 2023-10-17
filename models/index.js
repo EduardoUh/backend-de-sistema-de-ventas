@@ -1,6 +1,6 @@
-const { Rol } = require('./roles.js');
-const { Sucursal } = require('./sucursales.js');
-const { Usuario } = require('./usuarios.js');
+const { Rol } = require('./Roles.js');
+const { Sucursal } = require('./Sucursales.js');
+const { Usuario } = require('./Usuarios.js');
 
 module.exports = {
     Rol,
