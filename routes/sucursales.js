@@ -1,6 +1,6 @@
 const express = require('express');
 const { body } = require('express-validator');
-const { verificarToken, verificarTipoUsuario, manejarResultados, revisarSucursalYaExiste } = require('../middlewares/index.js');
+const { verificarToken, verificarTipoUsuario, manejarResultados, revisarSucursalYaExiste, restringirAcceso } = require('../middlewares/index.js');
 const { crearSucursal } = require('../controllers/sucursales.js');
 
 
@@ -38,6 +38,7 @@ const validadorActivo = () => body('activo')
 sucursalesRouter.post('/sucursales',
     verificarToken,
     verificarTipoUsuario,
+    restringirAcceso,
     [
         validadorNombre(),
         validadorCiudad(),
