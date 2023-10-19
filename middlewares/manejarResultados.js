@@ -6,7 +6,7 @@ module.exports.manejarResultados = (req, res, next) => {
     if (!result.isEmpty()) {
         return res.status(400).json({
             ok: false,
-            errors: result.mapped()
+            errors: result.array()
         });
     }
     next();
