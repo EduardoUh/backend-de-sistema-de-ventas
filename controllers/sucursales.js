@@ -56,7 +56,6 @@ module.exports.actualizarSucursal = async (req = request, res = response) => {
     }
 }
 
-// TODO: logic to get a sucursal by id
 module.exports.obtenerSucursalPorId = async (req = request, res = response) => {
     const { id } = req.params;
 
