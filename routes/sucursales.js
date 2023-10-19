@@ -1,7 +1,7 @@
 const express = require('express');
 const { body, param } = require('express-validator');
 const { verificarToken, verificarTipoUsuario, manejarResultados, revisarSucursalYaExiste, restringirAcceso } = require('../middlewares/index.js');
-const { crearSucursal, actualizarSucursal } = require('../controllers/sucursales.js');
+const { crearSucursal, actualizarSucursal, obtenerSucursalPorId } = require('../controllers/sucursales.js');
 
 
 const sucursalesRouter = express.Router();
@@ -70,6 +70,15 @@ sucursalesRouter.put('/sucursales/:id',
     ],
     manejarResultados,
     actualizarSucursal
+);
+
+sucursalesRouter.get('/sucursales/:id',
+    verificarToken,
+    verificarTipoUsuario,
+    restringirAcceso,
+    validadorId(),
+    manejarResultados,
+    obtenerSucursalPorId
 );
 
 module.exports = {
