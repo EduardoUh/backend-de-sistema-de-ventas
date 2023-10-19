@@ -1,7 +1,7 @@
 const express = require('express');
-const { body } = require('express-validator');
-const { verificarToken, verificarTipoUsuario, manejarResultados, revisarSucursalYaExiste } = require('../middlewares/index.js');
-const { crearSucursal } = require('../controllers/sucursales.js');
+const { body, param } = require('express-validator');
+const { verificarToken, verificarTipoUsuario, manejarResultados, revisarSucursalYaExiste, restringirAcceso } = require('../middlewares/index.js');
+const { crearSucursal, actualizarSucursal } = require('../controllers/sucursales.js');
 
 
 const sucursalesRouter = express.Router();
@@ -31,13 +31,20 @@ const validadorEmail = () => body('email')
     .exists().withMessage('El email es requerido')
     .isEmail().withMessage('El email no es válido');
 
-const validadorActivo = () => body('activo')
+const validadorActivo = () => body('activa')
     .exists().withMessage('El estatus de la sucursal es requerido')
     .isBoolean({ strict: true }).withMessage('El estatus debe ser true o false');
+
+const validadorId = () => param('id')
+    .exists().withMessage('El id es requerido')
+    .isString().withMessage('El id debe ser una cadena de texto')
+    .trim()
+    .isLength({ min: 24, max: 24 }).withMessage('Id inválido');
 
 sucursalesRouter.post('/sucursales',
     verificarToken,
     verificarTipoUsuario,
+    restringirAcceso,
     [
         validadorNombre(),
         validadorCiudad(),
@@ -47,6 +54,22 @@ sucursalesRouter.post('/sucursales',
     manejarResultados,
     revisarSucursalYaExiste,
     crearSucursal
+);
+
+sucursalesRouter.put('/sucursales/:id',
+    verificarToken,
+    verificarTipoUsuario,
+    restringirAcceso,
+    [
+        validadorNombre(),
+        validadorCiudad(),
+        validadorDireccion(),
+        validadorEmail(),
+        validadorActivo(),
+        validadorId()
+    ],
+    manejarResultados,
+    actualizarSucursal
 );
 
 module.exports = {
