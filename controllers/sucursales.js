@@ -1,6 +1,6 @@
 const { request, response } = require('express');
 const { Sucursal } = require('../models/index.js');
-const { transformarDatosPopulateRol } = require('../helpers/index.js');
+const { transformarDatosPopulateRol, filtrarQueryParams } = require('../helpers/index.js');
 
 
 module.exports.crearSucursal = async (req = request, res = response) => {
@@ -90,6 +90,46 @@ module.exports.obtenerSucursalPorId = async (req = request, res = response) => {
         res.status(500).json({
             ok: false,
             message: 'Algo salió mal al intentar consultar la sucursal, intente de nuevo y si el fallo persiste contacte al administrador'
+        });
+    }
+}
+
+module.exports.obtenerSucursales = async (req = request, res = response) => {
+    const queryParams = req.query;
+
+    try {
+        const params = filtrarQueryParams(queryParams, ['nombre', 'ciudad', 'direccion', 'email', 'activa', 'creador']);
+
+        const sucursales = await Sucursal.find(params)
+            .populate({
+                path: 'creador',
+                select: 'nombre apellidoPaterno apellidoMaterno rol email numTelefono -_id',
+                populate: {
+                    path: 'rol',
+                    options: {
+                        transform: transformarDatosPopulateRol
+                    }
+                }
+            });
+
+        if (sucursales.length === 0) {
+            return res.status(404).json({
+                ok: false,
+                message: 'No se encontraron registros'
+            });
+        }
+
+        res.status(200).json({
+            ok: true,
+            sucursales
+        });
+
+    } catch (error) {
+        console.log(error);
+
+        res.status(500).json({
+            ok: false,
+            message: 'Algo salió mal al intentar consultar las sucursales, intente de nuevo y si el fallo persiste contacte al administrador'
         });
     }
 }
