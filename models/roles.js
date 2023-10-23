@@ -6,7 +6,11 @@ const rolSchema = new Schema({
         type: String,
         required: true,
         trim: true,
-        uppercase: true
+        uppercase: true,
+        enum: {
+            values: ['ADMINISTRADOR', 'VENDEDOR'],
+            message: '{VALUE} no es un rol válido'
+        }
     },
     descripcion: {
         type: String,

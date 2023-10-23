@@ -56,6 +56,11 @@ const usuarioSchema = new Schema({
         type: String,
         required: true,
         trim: true
+    },
+    activo: {
+        type: Boolean,
+        required: true,
+        default: true
     }
 });
 

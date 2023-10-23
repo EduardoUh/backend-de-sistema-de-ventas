@@ -3,7 +3,7 @@ require('dotenv').config();
 const cors = require('cors');
 const path = require('path');
 const { connectDb } = require('./db/config.js');
-const { authRouter, sucursalesRouter } = require('./routes/index.js');
+const { authRouter, sucursalesRouter, usuariosRouter } = require('./routes/index.js');
 
 const app = express();
 
@@ -16,6 +16,7 @@ const startServer = async () => {
 
     app.use('/api/v1', authRouter);
     app.use('/api/v1', sucursalesRouter);
+    app.use('/api/v1', usuariosRouter);
 
     app.get('*', (req, res) => {
         res.sendFile(path.join(__dirname, '/public/index.html'));
