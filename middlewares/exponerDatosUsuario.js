@@ -18,7 +18,7 @@ module.exports.exponerDatosUsuario = async (req = request, res = response, next)
         req.esSuperUsuario = usuario.rol.rol === 'SUPER USUARIO' ? true : false;
         req.esAdministrador = usuario.rol.rol === 'ADMINISTRADOR' ? true : false;
         req.esVendedor = usuario.rol.rol === 'VENDEDOR' ? true : false;
-        req.sucursalUsuario = usuario.sucursal ? usuario.sucursal : null;
+        req.sucursalUsuario = usuario.sucursal ? usuario.sucursal._id.toHexString() : null;
 
         next();
 
