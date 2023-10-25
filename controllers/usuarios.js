@@ -5,7 +5,7 @@ const { transformarDatosPopulateRol, filtrarQueryParams } = require('../helpers/
 
 
 module.exports.crearUsuario = async (req = request, res = response) => {
-    const { body } = req;
+    const { body, esAdministrador } = req;
 
     try {
         const promises = [Rol.findById(body.rol)];
@@ -23,10 +23,17 @@ module.exports.crearUsuario = async (req = request, res = response) => {
             });
         }
 
-        if (rol.rol === 'VENDEDOR' && !body.sucursal) {
+        if (rol.rol === 'VENDEDOR' && !body.sucursal || rol.rol === 'ADMINISTRADOR' && !body.sucursal) {
             return res.status(401).json({
                 ok: false,
-                message: 'Es necesario incluir una sucursal para los vendedores'
+                message: 'Es necesario incluir una sucursal para los vendedores o administradores'
+            });
+        }
+
+        if (esAdministrador && rol.rol !== 'VENDEDOR') {
+            return res.status(401).json({
+                ok: false,
+                message: 'Sin las credenciales necesarias para crear un usuario de ése tipo'
             });
         }
 
@@ -37,7 +44,7 @@ module.exports.crearUsuario = async (req = request, res = response) => {
             });
         }
 
-        if (rol.rol === 'ADMINISTRADOR' && body.sucursal) {
+        if (rol.rol === 'SUPER USUARIO' && body.sucursal) {
             delete body.sucursal;
         }
 
@@ -50,7 +57,7 @@ module.exports.crearUsuario = async (req = request, res = response) => {
         res.status(200).json({
             ok: true,
             message: `Usuario ${body.nombres} creado con exito`
-        })
+        });
 
     } catch (error) {
         console.log(error);

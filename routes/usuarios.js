@@ -1,7 +1,7 @@
 const express = require('express');
 const { body } = require('express-validator');
-const { verificarToken, verificarTipoUsuario, restringirAcceso, manejarResultados, revisarUsuarioYaExiste } = require('../middlewares/index.js');
-const { crearUsuario } = require('../controllers/usuarios.js');
+const { verificarToken, exponerDatosUsuario, permitirSuperUsuarios, permitirSuperUsuariosYAdministradores, manejarResultados, revisarUsuarioYaExiste } = require('../middlewares/index.js');
+const { crearUsuario, actualizarUsuarioVendedores, actualizarDatosVendedor } = require('../controllers/usuarios.js');
 
 
 const usuariosRouter = express.Router();
@@ -68,8 +68,8 @@ const activo = () => body('activo')
 
 usuariosRouter.post('/usuarios',
     verificarToken,
-    verificarTipoUsuario,
-    restringirAcceso,
+    exponerDatosUsuario,
+    permitirSuperUsuariosYAdministradores,
     [
         validadorNombres(),
         validadorApellidoPaterno(),
