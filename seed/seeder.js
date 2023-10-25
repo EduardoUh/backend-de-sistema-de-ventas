@@ -12,7 +12,7 @@ const importarDatos = async () => {
         usuario.rol = rolesCreados[0].id;
         const usuarioCreado = await Usuario.create(usuario);
         sucursal.creador = usuarioCreado.id;
-        await Sucursal.insertMany(sucursal);
+        await Sucursal.create(sucursal);
         console.log('Roles, usuario y sucursal creados exitosamente');
     } catch (error) {
         console.log(error);

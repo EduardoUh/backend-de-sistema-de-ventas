@@ -1,7 +1,11 @@
 module.exports.roles = [
     {
-        rol: 'ADMINISTRADOR',
+        rol: 'SUPER USUARIO',
         descripcion: 'ACCESO A TODO EL SISTEMA'
+    },
+    {
+        rol: 'ADMINISTRADOR',
+        descripcion: 'ACCESO A ADMINISTRAR UNA SUCURSAL'
     },
     {
         rol: 'VENDEDOR',

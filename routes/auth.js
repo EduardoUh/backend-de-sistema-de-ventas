@@ -1,6 +1,6 @@
 const express = require('express');
 const { body, header } = require('express-validator');
-const { manejarResultados, verificarToken, verificarTipoUsuario } = require('../middlewares/index.js');
+const { manejarResultados, verificarToken, exponerDatosUsuario } = require('../middlewares/index.js');
 const { login, renovarToken } = require('../controllers/auth.js');
 
 
@@ -31,7 +31,7 @@ authRouter.get('/auth/renovar-token',
     validadorToken(),
     manejarResultados,
     verificarToken,
-    verificarTipoUsuario,
+    exponerDatosUsuario,
     renovarToken
 );
 

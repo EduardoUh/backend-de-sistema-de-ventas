@@ -1,10 +1,10 @@
 const { request, response } = require('express');
 
 
-module.exports.restringirAcceso = (req = request, res = response, next) => {
-    const { esAdministrador } = req;
+module.exports.permitirSuperUsuarios = (req = request, res = response, next) => {
+    const { esSuperUsuario } = req;
 
-    if (!esAdministrador) {
+    if (!esSuperUsuario) {
         return res.status(401).json({
             ok: false,
             message: 'Sin las credenciales necesarias para realizar esta acción'
