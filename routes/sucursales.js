@@ -1,6 +1,6 @@
 const express = require('express');
 const { body, param } = require('express-validator');
-const { verificarToken, verificarTipoUsuario, manejarResultados, revisarSucursalYaExiste, restringirAcceso } = require('../middlewares/index.js');
+const { verificarToken, exponerDatosUsuario, manejarResultados, revisarSucursalYaExiste, permitirSuperUsuarios, permitirSuperUsuariosYAdministradores, verificarAdministradorPerteneceSucursal } = require('../middlewares/index.js');
 const { crearSucursal, actualizarSucursal, obtenerSucursalPorId, obtenerSucursales } = require('../controllers/sucursales.js');
 
 
@@ -43,8 +43,8 @@ const validadorId = () => param('id')
 
 sucursalesRouter.post('/sucursales',
     verificarToken,
-    verificarTipoUsuario,
-    restringirAcceso,
+    exponerDatosUsuario,
+    permitirSuperUsuarios,
     [
         validadorNombre(),
         validadorCiudad(),
@@ -58,8 +58,8 @@ sucursalesRouter.post('/sucursales',
 
 sucursalesRouter.put('/sucursales/:id',
     verificarToken,
-    verificarTipoUsuario,
-    restringirAcceso,
+    exponerDatosUsuario,
+    permitirSuperUsuariosYAdministradores,
     [
         validadorNombre(),
         validadorCiudad(),
@@ -69,22 +69,24 @@ sucursalesRouter.put('/sucursales/:id',
         validadorId()
     ],
     manejarResultados,
+    verificarAdministradorPerteneceSucursal,
     actualizarSucursal
 );
 
 sucursalesRouter.get('/sucursales/:id',
     verificarToken,
-    verificarTipoUsuario,
-    restringirAcceso,
+    exponerDatosUsuario,
+    permitirSuperUsuariosYAdministradores,
     validadorId(),
     manejarResultados,
+    verificarAdministradorPerteneceSucursal,
     obtenerSucursalPorId
 );
 
 sucursalesRouter.get('/sucursales',
     verificarToken,
-    verificarTipoUsuario,
-    restringirAcceso,
+    exponerDatosUsuario,
+    permitirSuperUsuarios,
     obtenerSucursales
 );
 

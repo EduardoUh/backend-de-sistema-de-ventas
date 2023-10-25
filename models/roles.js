@@ -8,7 +8,7 @@ const rolSchema = new Schema({
         trim: true,
         uppercase: true,
         enum: {
-            values: ['ADMINISTRADOR', 'VENDEDOR'],
+            values: ['SUPER USUARIO','ADMINISTRADOR', 'VENDEDOR'],
             message: '{VALUE} no es un rol válido'
         }
     },

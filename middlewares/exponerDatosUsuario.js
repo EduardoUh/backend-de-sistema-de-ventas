@@ -2,7 +2,7 @@ const { request, response } = require('express');
 const { Usuario } = require('../models/index.js');
 
 
-module.exports.verificarTipoUsuario = async (req = request, res = response, next) => {
+module.exports.exponerDatosUsuario = async (req = request, res = response, next) => {
     const { uId } = req;
     try {
         const usuario = await Usuario.findById(uId)
@@ -15,7 +15,10 @@ module.exports.verificarTipoUsuario = async (req = request, res = response, next
             });
         }
 
+        res.esSuperUsuario = usuario.rol.rol === 'SUPER USUARIO' ? true : false;
         req.esAdministrador = usuario.rol.rol === 'ADMINISTRADOR' ? true : false;
+        req.esVendedor = usuario.rol.rol === 'VENDEDOR' ? true : false;
+        req.sucursalUsuario = usuario.sucursal ? usuario.sucursal : null;
 
         next();
 
