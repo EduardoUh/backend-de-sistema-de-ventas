@@ -107,3 +107,62 @@ module.exports.actualizarPerfilAdminsVendedores = async (req = request, res = re
         });
     }
 }
+
+module.exports.adminActualizaDatosVendedor = async (req = request, res = response) => {
+    const { nombres, apellidoPaterno, apellidoMaterno, rfc, email, direccion, numTelefono, activo } = req.body;
+    const { sucursalUsuario } = req;
+    const { id: idVendedor } = req.params;
+
+    try {
+        const vendedor = await Usuario.findById(idVendedor)
+            .populate({
+                path: 'rol',
+                options: {
+                    transform: transformarDatosPopulateRol
+                }
+            });
+
+        if (!vendedor) {
+            return res.status(404).json({
+                ok: false,
+                message: 'Vendedor no encontrado'
+            });
+        }
+
+        if (vendedor.rol !== 'VENDEDOR') {
+            return res.status(401).json({
+                ok: false,
+                message: 'Sin las credenciales necesarias para actualizar éste usuario'
+            });
+        }
+
+        if (sucursalUsuario !== vendedor.sucursal.toHexString()) {
+            return res.status(401).json({
+                ok: false,
+                message: 'Sin las credenciales necesarias para actualizar éste vendedor'
+            });
+        }
+
+        await vendedor.updateOne({ nombres, apellidoPaterno, apellidoMaterno, rfc, email, direccion, numTelefono, activo });
+
+        res.status(200).json({
+            ok: true,
+            message: `Vendedor ${nombres} actualizado correctamente`
+        });
+
+    } catch (error) {
+        console.log(error);
+
+        if (error.code === 11000) {
+            return res.status(409).json({
+                ok: false,
+                message: 'Ya existe un usuario con ese rfc o email'
+            });
+        }
+
+        res.status(500).json({
+            ok: false,
+            message: 'Algo salió mal al actualizar el vendedor, intente de nuevo y si el fallo persiste contacte al administrador'
+        });
+    }
+}
