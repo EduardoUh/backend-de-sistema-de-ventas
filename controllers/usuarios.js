@@ -54,9 +54,9 @@ module.exports.crearUsuario = async (req = request, res = response) => {
 
         await usuario.save();
 
-        res.status(200).json({
+        res.status(201).json({
             ok: true,
-            message: `Usuario ${body.nombres} creado con exito`
+            message: `Usuario ${body.nombres} creado con éxito`
         });
 
     } catch (error) {
@@ -66,5 +66,44 @@ module.exports.crearUsuario = async (req = request, res = response) => {
             ok: false,
             message: 'Algo salió mal al crear el usuario, intente de nuevo y si el fallo persiste contacte al administrador'
         })
+    }
+}
+
+module.exports.actualizarPerfilAdminsVendedores = async (req = request, res = response) => {
+    const { nombres, apellidoPaterno, apellidoMaterno, email, direccion, numTelefono } = req.body;
+    const { id } = req.params;
+    const { uId, esAdministrador, esVendedor } = req;
+
+    try {
+        if (uId !== id || !esAdministrador && !esVendedor) {
+            return res.status(401).json({
+                ok: false,
+                message: 'Sin las credenciales necesarias para realizar ésta acción'
+            });
+        }
+
+        const usuario = await Usuario.findById(uId);
+
+        await usuario.updateOne({ nombres, apellidoPaterno, apellidoMaterno, email, direccion, numTelefono });
+
+        res.status(200).json({
+            ok: true,
+            message: `Perfil actualizado correctamente`
+        });
+
+    } catch (error) {
+        console.log(error);
+
+        if (error.code === 11000) {
+            return res.status(409).json({
+                ok: false,
+                message: 'Ya existe un usuario con ése email'
+            });
+        }
+
+        res.status(500).json({
+            ok: false,
+            message: 'Algo salió mal al actualizar el perfil, intente de nuevo y si el fallo persiste contacte al administrador'
+        });
     }
 }
