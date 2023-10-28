@@ -166,3 +166,61 @@ module.exports.adminActualizaDatosVendedor = async (req = request, res = respons
         });
     }
 }
+
+module.exports.actualizarDatosAdminsVendedores = async (req = request, res = response) => {
+    const { nombres, apellidoPaterno, apellidoMaterno, rfc, rol, sucursal, email, direccion, numTelefono, activo } = req.body;
+    const { id: idUsuario } = req.params;
+
+    try {
+        const promises = [
+            Usuario.findById(idUsuario),
+            Rol.findById(rol),
+            Sucursal.findById(sucursal)
+        ];
+
+        const [usuario, dbRol, dbSucursal] = await Promise.all(promises);
+
+        if (!usuario) {
+            return res.status(404).json({
+                ok: false,
+                message: 'Usuario no encontrado'
+            });
+        }
+
+        if (!dbRol) {
+            return res.status(401).json({
+                ok: false,
+                message: 'Rol inválido'
+            });
+        }
+
+        if (!dbSucursal) {
+            return res.status(401).json({
+                ok: false,
+                message: 'Sucursal Inválida'
+            });
+        }
+
+        await usuario.updateOne({ nombres, apellidoPaterno, apellidoMaterno, rfc, rol, sucursal: dbRol.rol === 'SUPER USUARIO' ? null : sucursal, email, direccion, numTelefono, activo });
+
+        res.status(200).json({
+            ok: true,
+            message: `${dbRol.rol} ${nombres} actualizado correctamente`
+        });
+
+    } catch (error) {
+        console.log(error);
+
+        if (error.code === 11000) {
+            return res.status(409).json({
+                ok: false,
+                message: 'Ya existe un usuario con ese rfc o email'
+            });
+        }
+
+        res.status(500).json({
+            ok: false,
+            message: 'Algo salió mal al actualizar los datos, intente de nuevo y si el falla persiste contacte al administrador'
+        });
+    }
+}
