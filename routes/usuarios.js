@@ -1,7 +1,7 @@
 const express = require('express');
 const { body, param } = require('express-validator');
 const { verificarToken, exponerDatosUsuario, permitirSuperUsuarios, permitirSuperUsuariosYAdministradores, permitirAdministradores, manejarResultados, revisarUsuarioYaExiste } = require('../middlewares/index.js');
-const { crearUsuario, actualizarPerfilAdminsVendedores, adminActualizaDatosVendedor, actualizarDatosAdminsVendedores } = require('../controllers/usuarios.js');
+const { crearUsuario, actualizarPerfilAdminsVendedores, adminActualizaDatosVendedor, actualizarDatosAdminsVendedores, actualizarPerfilSuperUsuario } = require('../controllers/usuarios.js');
 
 
 const usuariosRouter = express.Router();
@@ -144,6 +144,24 @@ usuariosRouter.put('/usuarios/actualizar-datos-administrador-vendedor/:id',
     ],
     manejarResultados,
     actualizarDatosAdminsVendedores
+);
+
+usuariosRouter.put('/usuarios/actualizar-perfil-super-usuario/:id',
+    verificarToken,
+    exponerDatosUsuario,
+    permitirSuperUsuarios,
+    [
+        validadorIdParam(),
+        validadorNombres(),
+        validadorApellidoPaterno(),
+        validadorApellidoMaterno(),
+        validadorRfc(),
+        validadorEmail(),
+        validadorDireccion(),
+        validadorNumTelefono()
+    ],
+    manejarResultados,
+    actualizarPerfilSuperUsuario
 );
 
 module.exports = {
