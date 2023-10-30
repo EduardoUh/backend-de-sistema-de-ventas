@@ -70,9 +70,10 @@ module.exports.crearUsuario = async (req = request, res = response) => {
 }
 
 module.exports.actualizarPerfilAdminsVendedores = async (req = request, res = response) => {
-    const { nombres, apellidoPaterno, apellidoMaterno, email, direccion, numTelefono } = req.body;
+    const { nombres, apellidoPaterno, apellidoMaterno, email, password, direccion, numTelefono } = req.body;
     const { id } = req.params;
     const { uId, esAdministrador, esVendedor } = req;
+    let hashedPassword;
 
     try {
         if (uId !== id || !esAdministrador && !esVendedor) {
@@ -84,7 +85,20 @@ module.exports.actualizarPerfilAdminsVendedores = async (req = request, res = re
 
         const usuario = await Usuario.findById(uId);
 
-        await usuario.updateOne({ nombres, apellidoPaterno, apellidoMaterno, email, direccion, numTelefono });
+        if (password && typeof password !== 'string' || password && password.length < 5) {
+            return res.status(400).json({
+                ok: false,
+                message: 'La contraseña debe ser una cadena de texto con al menos cinco caracteres'
+            });
+        }
+
+        if (password) {
+            hashedPassword = await hash(password, 12);
+        } else {
+            hashedPassword = usuario.password;
+        }
+
+        await usuario.updateOne({ nombres, apellidoPaterno, apellidoMaterno, email, password: hashedPassword, direccion, numTelefono });
 
         res.status(200).json({
             ok: true,
@@ -109,9 +123,10 @@ module.exports.actualizarPerfilAdminsVendedores = async (req = request, res = re
 }
 
 module.exports.adminActualizaDatosVendedor = async (req = request, res = response) => {
-    const { nombres, apellidoPaterno, apellidoMaterno, rfc, email, direccion, numTelefono, activo } = req.body;
+    const { nombres, apellidoPaterno, apellidoMaterno, rfc, email, password, direccion, numTelefono, activo } = req.body;
     const { sucursalUsuario } = req;
     const { id: idVendedor } = req.params;
+    let hashedPassword;
 
     try {
         const vendedor = await Usuario.findById(idVendedor)
@@ -143,7 +158,20 @@ module.exports.adminActualizaDatosVendedor = async (req = request, res = respons
             });
         }
 
-        await vendedor.updateOne({ nombres, apellidoPaterno, apellidoMaterno, rfc, email, direccion, numTelefono, activo });
+        if (password && typeof password !== 'string' || password && password.length < 5) {
+            return res.status(400).json({
+                ok: false,
+                message: 'La contraseña debe ser una cadena de texto con al menos cinco caracteres'
+            });
+        }
+
+        if (password) {
+            hashedPassword = await hash(password, 12);
+        } else {
+            hashedPassword = vendedor.password;
+        }
+
+        await vendedor.updateOne({ nombres, apellidoPaterno, apellidoMaterno, rfc, email, password: hashedPassword, direccion, numTelefono, activo });
 
         res.status(200).json({
             ok: true,
@@ -168,8 +196,9 @@ module.exports.adminActualizaDatosVendedor = async (req = request, res = respons
 }
 
 module.exports.actualizarDatosAdminsVendedores = async (req = request, res = response) => {
-    const { nombres, apellidoPaterno, apellidoMaterno, rfc, rol, sucursal, email, direccion, numTelefono, activo } = req.body;
+    const { nombres, apellidoPaterno, apellidoMaterno, rfc, rol, sucursal, email, password, direccion, numTelefono, activo } = req.body;
     const { id: idUsuario } = req.params;
+    let hashedPassword;
 
     try {
         const promises = [
@@ -201,7 +230,20 @@ module.exports.actualizarDatosAdminsVendedores = async (req = request, res = res
             });
         }
 
-        await usuario.updateOne({ nombres, apellidoPaterno, apellidoMaterno, rfc, rol, sucursal: dbRol.rol === 'SUPER USUARIO' ? null : sucursal, email, direccion, numTelefono, activo });
+        if (password && typeof password !== 'string' || password && password.length < 5) {
+            return res.status(400).json({
+                ok: false,
+                message: 'La contraseña debe ser una cadena de texto con al menos cinco caracteres'
+            });
+        }
+
+        if (password) {
+            hashedPassword = await hash(password, 12);
+        } else {
+            hashedPassword = usuario.password;
+        }
+
+        await usuario.updateOne({ nombres, apellidoPaterno, apellidoMaterno, rfc, rol, sucursal: dbRol.rol === 'SUPER USUARIO' ? null : sucursal, email, password: hashedPassword, direccion, numTelefono, activo });
 
         res.status(200).json({
             ok: true,
@@ -226,9 +268,10 @@ module.exports.actualizarDatosAdminsVendedores = async (req = request, res = res
 }
 
 module.exports.actualizarPerfilSuperUsuario = async (req = request, res = response) => {
-    const { nombres, apellidoPaterno, apellidoMaterno, rfc, email, direccion, numTelefono } = req.body;
+    const { nombres, apellidoPaterno, apellidoMaterno, rfc, email, password, direccion, numTelefono } = req.body;
     const { id: idUsuario } = req.params;
     const { uId } = req;
+    let hashedPassword;
 
     try {
         if (uId !== idUsuario) {
@@ -247,7 +290,20 @@ module.exports.actualizarPerfilSuperUsuario = async (req = request, res = respon
             });
         }
 
-        await usuario.updateOne({ nombres, apellidoPaterno, apellidoMaterno, rfc, email, direccion, numTelefono });
+        if (password && typeof password !== 'string' || password && password.length < 5) {
+            return res.status(400).json({
+                ok: false,
+                message: 'La contraseña debe ser una cadena de texto con al menos cinco caracteres'
+            });
+        }
+
+        if (password) {
+            hashedPassword = await hash(password, 12);
+        } else {
+            hashedPassword = usuario.password;
+        }
+
+        await usuario.updateOne({ nombres, apellidoPaterno, apellidoMaterno, rfc, email, password: hashedPassword, direccion, numTelefono });
 
         res.status(200).json({
             ok: true,
