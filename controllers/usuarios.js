@@ -1,7 +1,7 @@
 const { request, response } = require('express');
 const { Usuario, Rol, Sucursal } = require('../models/index.js');
 const { hash, compare } = require('bcrypt');
-const { transformarDatosPopulateRol, filtrarQueryParams } = require('../helpers/index.js');
+const { transformarDatosPopulateRol, transformarDatosPopulatedSucursal, filtrarQueryParams } = require('../helpers/index.js');
 
 
 module.exports.crearUsuario = async (req = request, res = response) => {
@@ -323,6 +323,96 @@ module.exports.actualizarPerfilSuperUsuario = async (req = request, res = respon
         res.status(500).json({
             ok: false,
             message: 'Algo salió mal al actualizar los datos, intente de nuevo y si el fallo persiste contacte al administrador'
+        });
+    }
+}
+
+module.exports.superUsuarioObtenerUsuarios = async (req = request, res = response) => {
+    const { query } = req;
+
+    try {
+        const queryParameters = filtrarQueryParams(query, ['nombres', 'apellidoPaterno', 'apellidoMaterno', 'rfc', 'email', 'rol', 'sucursal', 'direccion', 'numTelefono']);
+
+        const usuarios = await Usuario.find(queryParameters)
+            .select('-password')
+            .populate({
+                path: 'rol',
+                options: {
+                    transform: transformarDatosPopulateRol
+                }
+            })
+            .populate({
+                path: 'sucursal',
+                options: {
+                    transform: transformarDatosPopulatedSucursal
+                }
+            });
+
+        if (usuarios.length === 0) {
+            return res.status(404).json({
+                ok: false,
+                message: 'No se encontraron registros'
+            });
+        }
+
+        res.status(200).json({
+            ok: true,
+            usuarios
+        });
+
+    } catch (error) {
+        console.log(error);
+
+        res.status(500).json({
+            ok: false,
+            message: 'Algo salió mal al obtner los usuarios, intente de nuevo y si el fallo persiste contacte al administrador'
+        });
+    }
+}
+
+module.exports.administradorObtenerUsuarios = async (req = request, res = response) => {
+    const { query, sucursalUsuario } = req;
+
+    try {
+        const queryParameters = filtrarQueryParams(query, ['nombres', 'apellidoPaterno', 'apellidoMaterno', 'rfc', 'email', 'direccion', 'numTelefono']);
+
+        queryParameters.sucursal = sucursalUsuario;
+
+        const usuarios = await Usuario.find(queryParameters)
+            .select('-password')
+            .populate({
+                path: 'rol',
+                options: {
+                    transform: transformarDatosPopulateRol
+                }
+            })
+            .populate({
+                path: 'sucursal',
+                options: {
+                    transform: transformarDatosPopulatedSucursal
+                }
+            });
+
+        const filteredUsers = usuarios.filter(usuario => usuario.rol === 'VENDEDOR');
+
+        if (usuarios.length === 0 || filteredUsers.length === 0) {
+            return res.status(404).json({
+                ok: false,
+                message: 'No se encontraron registros'
+            });
+        }
+
+        res.status(200).json({
+            ok: true,
+            usuarios: filteredUsers
+        });
+
+    } catch (error) {
+        console.log(error);
+
+        res.status(500).json({
+            ok: false,
+            message: 'Algo salió mal al obtener los vendedores, intente de nuevo y si el fallo persiste contacte al administrador'
         });
     }
 }
