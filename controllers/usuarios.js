@@ -416,3 +416,72 @@ module.exports.administradorObtenerUsuarios = async (req = request, res = respon
         });
     }
 }
+
+module.exports.obtenerUsuarioPorId = async (req = request, res = response) => {
+    const { id: idUsuario } = req.params;
+    const { uId, esAdministrador, sucursalUsuario } = req;
+
+    try {
+        let usuario;
+
+        if (esAdministrador) {
+            usuario = await Usuario.findOne({ _id: idUsuario, sucursal: sucursalUsuario })
+                .select('-password')
+                .populate({
+                    path: 'rol',
+                    options: {
+                        transform: transformarDatosPopulateRol
+                    }
+                })
+                .populate({
+                    path: 'sucursal',
+                    options: {
+                        transform: transformarDatosPopulatedSucursal
+                    }
+                });
+        }
+        else {
+            usuario = await Usuario.findById(idUsuario)
+                .select('-password')
+                .populate({
+                    path: 'rol',
+                    options: {
+                        transform: transformarDatosPopulateRol
+                    }
+                })
+                .populate({
+                    path: 'sucursal',
+                    options: {
+                        transform: transformarDatosPopulatedSucursal
+                    }
+                });
+        }
+
+        if (!usuario) {
+            return res.status(404).json({
+                ok: false,
+                message: 'Usuario no encontrado'
+            });
+        }
+
+        if (esAdministrador && usuario.rol !== 'VENDEDOR' && uId !== usuario.id) {
+            return res.status(401).json({
+                ok: false,
+                message: 'Sin acceso a éste usuario'
+            });
+        }
+
+        res.status(200).json({
+            ok: true,
+            usuario
+        });
+
+    } catch (error) {
+        console.log(error);
+
+        res.status(500).json({
+            ok: false,
+            message: 'Algo salió mal al obtener el usuario, intente de nuevo y si el fallo persiste contacte al administrador'
+        });
+    }
+}
