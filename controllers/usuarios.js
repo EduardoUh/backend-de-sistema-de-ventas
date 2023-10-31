@@ -5,7 +5,7 @@ const { transformarDatosPopulateRol, transformarDatosPopulatedSucursal, filtrarQ
 
 
 module.exports.crearUsuario = async (req = request, res = response) => {
-    const { body, esAdministrador } = req;
+    const { body, esAdministrador, sucursalUsuario } = req;
 
     try {
         const promises = [Rol.findById(body.rol)];
@@ -41,6 +41,13 @@ module.exports.crearUsuario = async (req = request, res = response) => {
             return res.status(401).json({
                 ok: false,
                 message: 'Sucursal inválida'
+            });
+        }
+
+        if (esAdministrador && sucursal.id !== sucursalUsuario) {
+            return res.status(401).json({
+                ok: false,
+                message: 'Sin las credenciales necesarias para asignar ésa sucursal'
             });
         }
 
