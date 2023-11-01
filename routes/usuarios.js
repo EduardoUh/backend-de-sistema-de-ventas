@@ -1,7 +1,7 @@
 const express = require('express');
-const { body } = require('express-validator');
-const { verificarToken, verificarTipoUsuario, restringirAcceso, manejarResultados, revisarUsuarioYaExiste } = require('../middlewares/index.js');
-const { crearUsuario } = require('../controllers/usuarios.js');
+const { body, param } = require('express-validator');
+const { verificarToken, exponerDatosUsuario, permitirSuperUsuarios, permitirSuperUsuariosYAdministradores, permitirAdministradores, manejarResultados, revisarUsuarioYaExiste } = require('../middlewares/index.js');
+const { crearUsuario, actualizarPerfilAdminsVendedores, adminActualizaDatosVendedor, actualizarDatosAdminsVendedores, actualizarPerfilSuperUsuario, superUsuarioObtenerUsuarios, administradorObtenerUsuarios, obtenerUsuarioPorId } = require('../controllers/usuarios.js');
 
 
 const usuariosRouter = express.Router();
@@ -25,7 +25,7 @@ const validadorApellidoMaterno = () => body('apellidoMaterno')
     .isString().withMessage('El apellido materno debe ser una cadena de texto')
     .trim()
     .notEmpty().withMessage('El apellido materno no puede ser una cadena de texto vacía')
-    .toUpperCase()
+    .toUpperCase();
 
 const validadorRfc = () => body('rfc')
     .exists().withMessage('El rfc es requerido')
@@ -60,16 +60,20 @@ const validadorNumTelefono = () => body('numTelefono')
     .exists().withMessage('El número de teléfono es requerido')
     .isString().withMessage('El número de teléfono debe ser una cadena de texto')
     .trim()
-    .notEmpty().withMessage('EL número de teléfono no puede ser una cadena de texto vacía')
+    .notEmpty().withMessage('EL número de teléfono no puede ser una cadena de texto vacía');
 
-const activo = () => body('activo')
+const validadorActivo = () => body('activo')
     .exists().withMessage('El estado es requerido')
-    .isBoolean({ strict: true }).withMessage('Valor inválido')
+    .isBoolean({ strict: true }).withMessage('Valor inválido');
+
+const validadorIdParam = () => param('id')
+    .isString().withMessage('El id debe ser una cadena de texto')
+    .isLength({ min: 24, max: 24 }).withMessage('Id inválido');
 
 usuariosRouter.post('/usuarios',
     verificarToken,
-    verificarTipoUsuario,
-    restringirAcceso,
+    exponerDatosUsuario,
+    permitirSuperUsuariosYAdministradores,
     [
         validadorNombres(),
         validadorApellidoPaterno(),
@@ -84,6 +88,101 @@ usuariosRouter.post('/usuarios',
     manejarResultados,
     revisarUsuarioYaExiste,
     crearUsuario
+);
+
+usuariosRouter.put('/usuarios/actualizar-perfil-administrador-vendedor/:id',
+    verificarToken,
+    exponerDatosUsuario,
+    [
+        validadorNombres(),
+        validadorApellidoPaterno(),
+        validadorApellidoMaterno(),
+        validadorEmail(),
+        validadorDireccion(),
+        validadorNumTelefono(),
+        validadorIdParam()
+    ],
+    manejarResultados,
+    actualizarPerfilAdminsVendedores
+);
+
+usuariosRouter.put('/usuarios/admin-actualiza-datos-vendedores/:id',
+    verificarToken,
+    exponerDatosUsuario,
+    permitirAdministradores,
+    [
+        validadorIdParam(),
+        validadorNombres(),
+        validadorApellidoPaterno(),
+        validadorApellidoMaterno(),
+        validadorRfc(),
+        validadorEmail(),
+        validadorDireccion(),
+        validadorNumTelefono(),
+        validadorActivo()
+    ],
+    manejarResultados,
+    adminActualizaDatosVendedor
+);
+
+usuariosRouter.put('/usuarios/actualizar-datos-administrador-vendedor/:id',
+    verificarToken,
+    exponerDatosUsuario,
+    permitirSuperUsuarios,
+    [
+        validadorIdParam(),
+        validadorNombres(),
+        validadorApellidoPaterno(),
+        validadorApellidoMaterno(),
+        validadorRfc(),
+        validadorIdBody('rol'),
+        validadorIdBody('sucursal'),
+        validadorEmail(),
+        validadorDireccion(),
+        validadorNumTelefono(),
+        validadorActivo()
+    ],
+    manejarResultados,
+    actualizarDatosAdminsVendedores
+);
+
+usuariosRouter.put('/usuarios/actualizar-perfil-super-usuario/:id',
+    verificarToken,
+    exponerDatosUsuario,
+    permitirSuperUsuarios,
+    [
+        validadorIdParam(),
+        validadorNombres(),
+        validadorApellidoPaterno(),
+        validadorApellidoMaterno(),
+        validadorRfc(),
+        validadorEmail(),
+        validadorDireccion(),
+        validadorNumTelefono()
+    ],
+    manejarResultados,
+    actualizarPerfilSuperUsuario
+);
+
+usuariosRouter.get('/usuarios',
+    verificarToken,
+    exponerDatosUsuario,
+    permitirSuperUsuarios,
+    superUsuarioObtenerUsuarios
+);
+
+usuariosRouter.get('/usuarios/vendedores',
+    verificarToken,
+    exponerDatosUsuario,
+    permitirAdministradores,
+    administradorObtenerUsuarios
+);
+
+usuariosRouter.get('/usuarios/:id',
+    verificarToken,
+    exponerDatosUsuario,
+    permitirSuperUsuariosYAdministradores,
+    obtenerUsuarioPorId
 );
 
 module.exports = {
