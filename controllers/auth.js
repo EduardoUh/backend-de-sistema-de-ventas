@@ -7,7 +7,7 @@ const { crearJwt, extraerDatosJwt } = require('../helpers/index.js');
 module.exports.login = async (req = request, res = response) => {
     const { email, password } = req.body;
     try {
-        const usuario = await Usuario.findOne({ email })
+        const usuario = await Usuario.findOne({ email, activo: true })
             .populate({
                 path: 'rol',
                 select: 'rol -_id'
@@ -41,6 +41,10 @@ module.exports.login = async (req = request, res = response) => {
                 nombres: usuario.nombres,
                 apellidoPaterno: usuario.apellidoPaterno,
                 apellidoMaterno: usuario.apellidoMaterno,
+                email: usuario.email,
+                rfc: usuario.rfc,
+                direccion: usuario.direccion,
+                numTelefono: usuario.numTelefono,
                 rol: usuario.rol.rol,
                 id: usuario.id,
                 sucursalId: usuario.sucursal ? usuario.sucursal._id.toHexString() : null,
