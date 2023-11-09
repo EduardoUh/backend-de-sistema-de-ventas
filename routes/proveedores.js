@@ -1,7 +1,7 @@
 const express = require('express');
-const { body } = require('express-validator');
+const { body, param } = require('express-validator');
 const { verificarToken, exponerDatosUsuario, permitirSuperUsuarios, revisarProveedorYaExiste, manejarResultados } = require('../middlewares/index.js');
-const { crearProveedor } = require('../controllers/proveedores.js');
+const { crearProveedor, actualizarProveedor, obtenerProveedores, obtenerProveedorPorId } = require('../controllers/proveedores.js');
 
 
 const proveedoresRouter = express.Router();
@@ -24,7 +24,7 @@ const validadorNumTelefono = () => body('numTelefono')
     .exists().withMessage('El número de teléfono es requerido')
     .isString().withMessage('El número de teléfono debe ser una cadena de texto')
     .trim()
-    .notEmpty().withMessage('El número de teléfono no puede ser una cadena de texto vacía')
+    .notEmpty().withMessage('El número de teléfono no puede ser una cadena de texto vacía');
 
 const validadorEmail = () => body('email')
     .exists().withMessage('El email es requerido')
@@ -34,7 +34,17 @@ const validadorRfc = () => body('rfc')
     .exists().withMessage('El rfc es requerido')
     .isString().withMessage('El rfc debe ser una cadena de texto')
     .trim()
-    .notEmpty().withMessage('El rfc no puede ser una cadena de texto vacía')
+    .notEmpty().withMessage('El rfc no puede ser una cadena de texto vacía');
+
+const validadorActivo = () => body('activo')
+    .exists().withMessage('El estatus del proveedor es requerido')
+    .isBoolean({ strict: true }).withMessage('Estatus inválido');
+
+const validadorId = () => param('id')
+    .exists().withMessage('El id es requerido')
+    .isString().withMessage('El id debe ser una cadena de texto')
+    .trim()
+    .isLength({ min: 24, max: 24 }).withMessage('Id inválido');
 
 proveedoresRouter.post('/proveedores',
     verificarToken,
@@ -50,6 +60,40 @@ proveedoresRouter.post('/proveedores',
     manejarResultados,
     revisarProveedorYaExiste,
     crearProveedor
+);
+
+proveedoresRouter.put('/proveedores/:id',
+    verificarToken,
+    exponerDatosUsuario,
+    permitirSuperUsuarios,
+    [
+        validadorNombre(),
+        validadorDireccion(),
+        validadorNumTelefono(),
+        validadorEmail(),
+        validadorRfc(),
+        validadorActivo(),
+        validadorId()
+    ],
+    manejarResultados,
+    actualizarProveedor
+);
+
+proveedoresRouter.get('/proveedores',
+    verificarToken,
+    exponerDatosUsuario,
+    obtenerProveedores
+);
+
+proveedoresRouter.get('/proveedores/:id',
+    verificarToken,
+    exponerDatosUsuario,
+    permitirSuperUsuarios,
+    [
+        validadorId()
+    ],
+    manejarResultados,
+    obtenerProveedorPorId
 );
 
 module.exports = {
