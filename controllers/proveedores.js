@@ -99,3 +99,31 @@ module.exports.obtenerProveedores = async (req = request, res = response) => {
         });
     }
 }
+
+module.exports.obtenerProveedorPorId = async (req = request, res = response) => {
+    const { id: proveedorId } = req.params;
+
+    try {
+        const proveedor = await Proveedor.findById(proveedorId);
+
+        if (!proveedor) {
+            return res.status(404).json({
+                ok: false,
+                message: 'Proveedor inexistente'
+            });
+        }
+
+        res.status(200).json({
+            ok: true,
+            proveedor
+        });
+
+    } catch (error) {
+        console.log(error);
+
+        res.status(500).json({
+            ok: false,
+            message: 'Algo salió mal al obtener el proveedor, intente de nuevo y si el fallo persiste contacte al administrador'
+        });
+    }
+}
