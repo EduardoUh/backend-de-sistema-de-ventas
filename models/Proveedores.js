@@ -30,6 +30,10 @@ const proveedoresSchema = new Schema({
         required: true,
         trim: true,
         unique: true
+    },
+    activo: {
+        type: Boolean,
+        default: true
     }
 });
 
