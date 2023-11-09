@@ -1,4 +1,4 @@
-const { request, response, json } = require('express');
+const { request, response } = require('express');
 const { filtrarQueryParams } = require('../helpers/index.js');
 const { Proveedor } = require('../models/index.js');
 
