@@ -11,7 +11,7 @@ module.exports.crearProveedor = async (req = request, res = response) => {
 
         res.status(201).json({
             ok: true,
-            message: `Sucursal ${nombre} creada con éxito`
+            message: `Proveedor ${nombre} creado con éxito`
         });
 
     } catch (error) {
