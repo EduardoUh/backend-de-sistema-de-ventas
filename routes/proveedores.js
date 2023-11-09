@@ -1,7 +1,7 @@
 const express = require('express');
 const { body, param } = require('express-validator');
 const { verificarToken, exponerDatosUsuario, permitirSuperUsuarios, revisarProveedorYaExiste, manejarResultados } = require('../middlewares/index.js');
-const { crearProveedor, actualizarProveedor } = require('../controllers/proveedores.js');
+const { crearProveedor, actualizarProveedor, obtenerProveedores } = require('../controllers/proveedores.js');
 
 
 const proveedoresRouter = express.Router();
@@ -77,6 +77,12 @@ proveedoresRouter.put('/proveedores/:id',
     ],
     manejarResultados,
     actualizarProveedor
+);
+
+proveedoresRouter.get('/proveedores',
+    verificarToken,
+    exponerDatosUsuario,
+    obtenerProveedores
 );
 
 module.exports = {

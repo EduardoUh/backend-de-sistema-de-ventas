@@ -1,4 +1,5 @@
 const { request, response, json } = require('express');
+const { filtrarQueryParams } = require('../helpers/index.js');
 const { Proveedor } = require('../models/index.js');
 
 
@@ -65,6 +66,38 @@ module.exports.actualizarProveedor = async (req = request, res = response) => {
         res.status(500).json({
             ok: false,
             message: "Algo salió mal al actualizar el proveedor, intente de nuevo y si el fallo persiste contacte al administrador"
+        });
+    }
+}
+
+module.exports.obtenerProveedores = async (req = request, res = response) => {
+    const queryParams = req.query;
+
+    try {
+        const params = filtrarQueryParams(queryParams, ["nombre", "direccion", "numTelefono", "email", "rfc", "activo"]);
+        console.log(queryParams);
+        console.log(params);
+
+        const proveedores = await Proveedor.find(params);
+
+        if (proveedores.length === 0) {
+            return res.status(404).json({
+                ok: false,
+                message: "No se encontraron registros"
+            });
+        }
+
+        res.status(200).json({
+            ok: true,
+            proveedores
+        });
+
+    } catch (error) {
+        console.log(error);
+
+        res.status(500).json({
+            ok: false,
+            message: "Algo salió mal al obtener los proveedores, intente de nuevo y si el fallo persiste contacte al administrador"
         });
     }
 }
