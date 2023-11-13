@@ -1,7 +1,7 @@
 const express = require('express');
-const { body } = require('express-validator');
+const { body, param } = require('express-validator');
 const { verificarToken, exponerDatosUsuario, permitirSuperUsuariosYAdministradores, manejarResultados, revisarTipoProductoYaExiste } = require('../middlewares/index.js');
-const { crearTipoProducto } = require('../controllers/tiposProductos.js');
+const { crearTipoProducto, actualizarTipoProducto, obtenerTiposProductos } = require('../controllers/tiposProductos.js');
 
 
 const tiposProductosRouter = express.Router();
@@ -20,6 +20,16 @@ const validadorDescripcion = () => body('descripcion')
     .notEmpty().withMessage('La descripcion no puede ser una cadena de texto vacía')
     .toUpperCase();
 
+const validadorActivo = () => body('activo')
+    .exists().withMessage('El estatus es requerido')
+    .isBoolean({ strict: true }).withMessage('El estatus debe ser true o false');
+
+const validadorId = () => param('id')
+    .exists().withMessage('El id es requerido')
+    .isString().withMessage('El id debe ser una cadena de texto')
+    .trim()
+    .isLength({ min: 24, max: 24 }).withMessage('Id inválido');
+
 tiposProductosRouter.post('/tiposProductos',
     verificarToken,
     exponerDatosUsuario,
@@ -31,6 +41,20 @@ tiposProductosRouter.post('/tiposProductos',
     manejarResultados,
     revisarTipoProductoYaExiste,
     crearTipoProducto
+);
+
+tiposProductosRouter.put('/tiposProductos/:id',
+    verificarToken,
+    exponerDatosUsuario,
+    permitirSuperUsuariosYAdministradores,
+    [
+        validadorTipoProducto(),
+        validadorDescripcion(),
+        validadorActivo(),
+        validadorId()
+    ],
+    manejarResultados,
+    actualizarTipoProducto
 );
 
 module.exports = {
