@@ -8,6 +8,7 @@ const { permitirAdministradores } = require('./permitirAdministradores.js');
 const { verificarAdministradorPerteneceSucursal } = require('./verificarAdministradorPerteneceSucursal.js');
 const { revisarUsuarioYaExiste } = require('./revisarUsuarioYaExiste.js');
 const { revisarProveedorYaExiste } = require('./revisarProveedorYaExiste.js');
+const { revisarTipoProductoYaExiste } = require('./revisarTipoProductoYaExiste.js');
 
 module.exports = {
     manejarResultados,
@@ -19,5 +20,6 @@ module.exports = {
     permitirAdministradores,
     verificarAdministradorPerteneceSucursal,
     revisarUsuarioYaExiste,
-    revisarProveedorYaExiste
+    revisarProveedorYaExiste,
+    revisarTipoProductoYaExiste
 };
