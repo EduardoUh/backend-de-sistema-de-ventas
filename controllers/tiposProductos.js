@@ -100,3 +100,31 @@ module.exports.obtenerTiposProductos = async (req = request, res = response) => 
         });
     }
 }
+
+module.exports.obtenerTipoProductoPorId = async (req = request, res = response) => {
+    const { id: tipoProductoId } = req.params;
+
+    try {
+        const tipoProducto = await TipoProducto.findById(tipoProductoId);
+
+        if (!tipoProducto) {
+            return res.status(404).json({
+                ok: false,
+                message: 'No se encontraron registros'
+            });
+        }
+
+        res.status(200).json({
+            ok: true,
+            tipoProducto
+        });
+
+    } catch (error) {
+        console.log(error);
+
+        res.status(500).json({
+            ok: false,
+            message: 'Algo salió mal al obtener el registro, intente de nuevo y si el fallo persiste contacte al administrador'
+        });
+    }
+}

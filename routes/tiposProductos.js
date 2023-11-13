@@ -1,7 +1,7 @@
 const express = require('express');
 const { body, param } = require('express-validator');
 const { verificarToken, exponerDatosUsuario, permitirSuperUsuariosYAdministradores, manejarResultados, revisarTipoProductoYaExiste } = require('../middlewares/index.js');
-const { crearTipoProducto, actualizarTipoProducto, obtenerTiposProductos } = require('../controllers/tiposProductos.js');
+const { crearTipoProducto, actualizarTipoProducto, obtenerTiposProductos, obtenerTipoProductoPorId } = require('../controllers/tiposProductos.js');
 
 
 const tiposProductosRouter = express.Router();
@@ -62,6 +62,15 @@ tiposProductosRouter.get('/tiposProductos',
     exponerDatosUsuario,
     permitirSuperUsuariosYAdministradores,
     obtenerTiposProductos
+);
+
+tiposProductosRouter.get('/tiposProductos/:id',
+    verificarToken,
+    exponerDatosUsuario,
+    permitirSuperUsuariosYAdministradores,
+    validadorId(),
+    manejarResultados,
+    obtenerTipoProductoPorId
 );
 
 module.exports = {
