@@ -3,11 +3,13 @@ const { sucursalesRouter } = require('./sucursales.js');
 const { usuariosRouter } = require('./usuarios.js');
 const { rolesRouter } = require('./roles.js');
 const { proveedoresRouter } = require('./proveedores.js');
+const { tiposProductosRouter } = require('./tiposProductos.js');
 
 module.exports = {
     authRouter,
     sucursalesRouter,
     usuariosRouter,
     rolesRouter,
-    proveedoresRouter
+    proveedoresRouter,
+    tiposProductosRouter
 }
