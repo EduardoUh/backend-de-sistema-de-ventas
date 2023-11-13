@@ -57,6 +57,13 @@ tiposProductosRouter.put('/tiposProductos/:id',
     actualizarTipoProducto
 );
 
+tiposProductosRouter.get('/tiposProductos',
+    verificarToken,
+    exponerDatosUsuario,
+    permitirSuperUsuariosYAdministradores,
+    obtenerTiposProductos
+);
+
 module.exports = {
     tiposProductosRouter
 };
