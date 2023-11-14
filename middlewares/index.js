@@ -9,6 +9,7 @@ const { verificarAdministradorPerteneceSucursal } = require('./verificarAdminist
 const { revisarUsuarioYaExiste } = require('./revisarUsuarioYaExiste.js');
 const { revisarProveedorYaExiste } = require('./revisarProveedorYaExiste.js');
 const { revisarTipoProductoYaExiste } = require('./revisarTipoProductoYaExiste.js');
+const { revisarProductoYaExiste } = require('./revisarProductoYaExiste.js');
 
 module.exports = {
     manejarResultados,
@@ -21,5 +22,6 @@ module.exports = {
     verificarAdministradorPerteneceSucursal,
     revisarUsuarioYaExiste,
     revisarProveedorYaExiste,
-    revisarTipoProductoYaExiste
+    revisarTipoProductoYaExiste,
+    revisarProductoYaExiste
 };
