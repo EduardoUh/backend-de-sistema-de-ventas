@@ -25,3 +25,36 @@ module.exports.crearProducto = async (req = request, res = response) => {
         });
     }
 }
+
+module.exports.actualizarProducto = async (req = request, res = response) => {
+    const { nombre, descripcion, tipoProducto, proveedor, precio } = req.body;
+    const { id: productoId } = req.params;
+
+    try {
+        const producto = await Producto.findById(productoId);
+
+        console.log(producto);
+
+        if (!producto) {
+            return res.status(404).json({
+                ok: false,
+                message: 'El producto no existe'
+            });
+        }
+
+        await producto.updateOne({ nombre, descripcion, tipoProducto, proveedor, precio });
+
+        res.status(200).json({
+            ok: true,
+            message: `Producto ${nombre} actualizado con éxito`
+        });
+
+    } catch (error) {
+        console.log(error);
+
+        res.status(500).json({
+            ok: false,
+            message: 'Algo salió mal al actualizar el producto, intente de nuevo y si el fallo persiste contacte al administrador'
+        });
+    }
+}

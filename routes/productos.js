@@ -1,7 +1,7 @@
 const express = require('express');
 const { body, param } = require('express-validator');
 const { verificarToken, exponerDatosUsuario, permitirSuperUsuariosYAdministradores, manejarResultados, revisarProductoYaExiste } = require('../middlewares/index.js');
-const { crearProducto } = require('../controllers/productos.js');
+const { crearProducto, actualizarProducto } = require('../controllers/productos.js');
 
 
 const productosRouter = express.Router();
@@ -49,6 +49,22 @@ productosRouter.post('/productos',
     manejarResultados,
     revisarProductoYaExiste,
     crearProducto
+);
+
+productosRouter.put('/productos/:id',
+    verificarToken,
+    exponerDatosUsuario,
+    permitirSuperUsuariosYAdministradores,
+    [
+        validadorIdParam(),
+        validadorNombre(),
+        validadorDescripcion(),
+        validadorIdBody('tipoProducto'),
+        validadorIdBody('proveedor'),
+        validadorPrecio()
+    ],
+    manejarResultados,
+    actualizarProducto
 );
 
 module.exports = {
