@@ -98,3 +98,43 @@ module.exports.obtenerProductos = async (req = request, res = response) => {
         });
     }
 }
+
+module.exports.obtenerProducto = async (req = request, res = response) => {
+    const { id: productoId } = req.params;
+
+    try {
+        const producto = await Producto.findById(productoId)
+            .populate({
+                path: 'tipoProducto',
+                options: {
+                    transform: transformarDatosPopulatedTipoProducto
+                }
+            })
+            .populate({
+                path: 'proveedor',
+                options: {
+                    transform: transformarDatosPopulatedProveedor
+                }
+            });
+
+        if (!producto) {
+            return res.status(404).json({
+                ok: false,
+                message: 'Producto inexistente'
+            });
+        }
+
+        res.status(200).json({
+            ok: true,
+            producto
+        });
+
+    } catch (error) {
+        console.log(error);
+
+        res.status(500).json({
+            ok: false,
+            message: 'Algo salió mal al obtener el producto, intente de nuevo y si el fallo persiste contacte al administrador'
+        });
+    }
+}
