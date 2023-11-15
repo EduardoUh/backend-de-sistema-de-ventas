@@ -1,5 +1,5 @@
 const { request, response } = require('express');
-const { filtrarQueryParams } = require('../helpers/index.js');
+const { filtrarQueryParams, transformarDatosPopulatedTipoProducto, transformarDatosPopulatedProveedor } = require('../helpers/index.js');
 const { Producto } = require('../models/index.js');
 
 
@@ -57,4 +57,44 @@ module.exports.actualizarProducto = async (req = request, res = response) => {
     }
 }
 
-// TODO: Controller to retrieve a list of products
+module.exports.obtenerProductos = async (req = request, res = response) => {
+    const queryParams = req.query;
+
+    try {
+        const params = filtrarQueryParams(queryParams, ['nombre', 'tipoProducto', 'proveedor', 'precio']);
+
+        const productos = await Producto.find(params)
+            .populate({
+                path: 'tipoProducto',
+                options: {
+                    transform: transformarDatosPopulatedTipoProducto
+                }
+            })
+            .populate({
+                path: 'proveedor',
+                options: {
+                    transform: transformarDatosPopulatedProveedor
+                }
+            });
+
+        if (productos.length === 0) {
+            return res.status(404).json({
+                ok: false,
+                message: 'No se encontraron registros'
+            });
+        }
+
+        res.status(200).json({
+            ok: true,
+            productos
+        });
+
+    } catch (error) {
+        console.log(error);
+
+        res.status(500).json({
+            ok: false,
+            message: 'Algo salió mal al obtener los productos, intente de nuevo y si el fallo persiste contacte al administrador'
+        });
+    }
+}
