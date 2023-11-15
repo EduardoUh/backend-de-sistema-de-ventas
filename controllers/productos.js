@@ -33,8 +33,6 @@ module.exports.actualizarProducto = async (req = request, res = response) => {
     try {
         const producto = await Producto.findById(productoId);
 
-        console.log(producto);
-
         if (!producto) {
             return res.status(404).json({
                 ok: false,
@@ -58,3 +56,5 @@ module.exports.actualizarProducto = async (req = request, res = response) => {
         });
     }
 }
+
+// TODO: Controller to retrieve a list of products
