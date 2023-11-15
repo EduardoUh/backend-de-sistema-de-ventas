@@ -30,6 +30,10 @@ const validadorPrecio = () => body('precio')
     .exists().withMessage('El precio es requerido')
     .isFloat().withMessage('El precio debe ser númerico');
 
+const validadorActivo = () => body('activo')
+    .exists().withMessage('El estatus es requerido')
+    .isBoolean({ strict: true }).withMessage('Estatus inválido');
+
 const validadorIdParam = () => param('id')
     .isString().withMessage('El id debe ser una cadena de texto')
     .trim()
@@ -61,7 +65,8 @@ productosRouter.put('/productos/:id',
         validadorDescripcion(),
         validadorIdBody('tipoProducto'),
         validadorIdBody('proveedor'),
-        validadorPrecio()
+        validadorPrecio(),
+        validadorActivo()
     ],
     manejarResultados,
     actualizarProducto

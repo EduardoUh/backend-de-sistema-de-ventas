@@ -28,6 +28,10 @@ const productoModel = new Schema({
         type: Number,
         required: true
     },
+    activo: {
+        type: Boolean,
+        default: true
+    }
 });
 
 productoModel.method('toJSON', function () {
