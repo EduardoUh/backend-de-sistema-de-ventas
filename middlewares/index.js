@@ -10,6 +10,7 @@ const { revisarUsuarioYaExiste } = require('./revisarUsuarioYaExiste.js');
 const { revisarProveedorYaExiste } = require('./revisarProveedorYaExiste.js');
 const { revisarTipoProductoYaExiste } = require('./revisarTipoProductoYaExiste.js');
 const { revisarProductoYaExiste } = require('./revisarProductoYaExiste.js');
+const { revisarStockProductoYaExiste } = require('./revisarStockProductoYaExiste.js');
 
 module.exports = {
     manejarResultados,
@@ -23,5 +24,6 @@ module.exports = {
     revisarUsuarioYaExiste,
     revisarProveedorYaExiste,
     revisarTipoProductoYaExiste,
-    revisarProductoYaExiste
+    revisarProductoYaExiste,
+    revisarStockProductoYaExiste
 };

@@ -5,6 +5,7 @@ const { rolesRouter } = require('./roles.js');
 const { proveedoresRouter } = require('./proveedores.js');
 const { tiposProductosRouter } = require('./tiposProductos.js');
 const { productosRouter } = require('./productos.js');
+const { stockProductoRouter } = require('./stockProductos.js');
 
 module.exports = {
     authRouter,
@@ -13,5 +14,6 @@ module.exports = {
     rolesRouter,
     proveedoresRouter,
     tiposProductosRouter,
-    productosRouter
+    productosRouter,
+    stockProductoRouter
 }
