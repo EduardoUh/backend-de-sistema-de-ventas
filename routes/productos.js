@@ -6,17 +6,6 @@ const { crearProducto, actualizarProducto, obtenerProductos, obtenerProducto } =
 
 const productosRouter = express.Router();
 
-/*
-const { body } = new ExpressValidator({}, {
-    isInOptions: async value => {
-        if (value !== 'KILOGRAMO' && value !== 'PIEZA') {
-            throw new Error('Valor en campo venta por es inválido');
-        }
-
-        return value;
-    }
-});*/
-
 const validadorNombre = () => body('nombre')
     .exists().withMessage('El nombre es requerido')
     .isString().withMessage('El nombre debe ser una cadena de texto')
