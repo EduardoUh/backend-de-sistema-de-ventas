@@ -1,7 +1,7 @@
 const express = require('express');
 const { body, param } = require('express-validator');
 const { verificarToken, exponerDatosUsuario, permitirSuperUsuariosYAdministradores, manejarResultados, revisarStockProductoYaExiste } = require('../middlewares/index.js');
-const { crearStockProducto } = require('../controllers/stockProductos.js');
+const { crearStockProducto, actualizarStock } = require('../controllers/stockProductos.js');
 
 
 const stockProductoRouter = express.Router();
@@ -17,7 +17,15 @@ const validadorSucursalId = () => body('sucursal')
 const validadorExistencia = () => body('existencia')
     .exists().withMessage('La existencia del producto es requerida')
     .isFloat({ gt: 0, min: 1 }).withMessage('La existencia debe ser un valor númerico de por lo menos un kg o una pieza')
-    .isDecimal({ decimal_digits: 2, blacklisted_chars: '$' }).withMessage('La existencia debe contener dos decimales como máximo');
+    .custom(value => {
+        const decimalsArray = String(value).split('.');
+
+        if (decimalsArray.length > 1 && decimalsArray[1].length > 2) {
+            return false;
+        }
+
+        return true;
+    }).withMessage('La existencia debe contener dos decimales como máximo');
 
 stockProductoRouter.post('/stockProductos',
     verificarToken,
@@ -31,6 +39,19 @@ stockProductoRouter.post('/stockProductos',
     manejarResultados,
     revisarStockProductoYaExiste,
     crearStockProducto
+);
+
+stockProductoRouter.put('/stockProductos/:id',
+    verificarToken,
+    exponerDatosUsuario,
+    permitirSuperUsuariosYAdministradores,
+    [
+        validadorProductoId(),
+        validadorSucursalId(),
+        validadorExistencia()
+    ],
+    manejarResultados,
+    actualizarStock
 );
 
 module.exports = {
