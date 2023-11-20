@@ -4,10 +4,10 @@ const { Producto } = require('../models/index.js');
 
 
 module.exports.crearProducto = async (req = request, res = response) => {
-    const { nombre, descripcion, tipoProducto, proveedor, precio } = req.body;
+    const { nombre, descripcion, tipoProducto, proveedor, precio, ventaPor } = req.body;
 
     try {
-        const producto = new Producto({ nombre, descripcion, tipoProducto, proveedor, precio });
+        const producto = new Producto({ nombre, descripcion, tipoProducto, proveedor, precio, ventaPor });
 
         await producto.save();
 
@@ -27,7 +27,7 @@ module.exports.crearProducto = async (req = request, res = response) => {
 }
 
 module.exports.actualizarProducto = async (req = request, res = response) => {
-    const { nombre, descripcion, tipoProducto, proveedor, precio, activo } = req.body;
+    const { nombre, descripcion, tipoProducto, proveedor, precio, ventaPor, activo } = req.body;
     const { id: productoId } = req.params;
 
     try {
@@ -40,7 +40,7 @@ module.exports.actualizarProducto = async (req = request, res = response) => {
             });
         }
 
-        await producto.updateOne({ nombre, descripcion, tipoProducto, proveedor, precio, activo });
+        await producto.updateOne({ nombre, descripcion, tipoProducto, proveedor, precio, ventaPor, activo });
 
         res.status(200).json({
             ok: true,
@@ -61,7 +61,7 @@ module.exports.obtenerProductos = async (req = request, res = response) => {
     const queryParams = req.query;
 
     try {
-        const params = filtrarQueryParams(queryParams, ['nombre', 'tipoProducto', 'proveedor', 'precio', 'activo']);
+        const params = filtrarQueryParams(queryParams, ['nombre', 'tipoProducto', 'proveedor', 'precio', 'ventaPor', 'activo']);
 
         const productos = await Producto.find(params)
             .populate({
