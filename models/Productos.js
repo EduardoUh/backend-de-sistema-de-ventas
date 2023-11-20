@@ -1,7 +1,7 @@
 const { Schema, model } = require('mongoose');
 
 
-const productoModel = new Schema({
+const productoSchema = new Schema({
     nombre: {
         type: String,
         required: true,
@@ -28,16 +28,26 @@ const productoModel = new Schema({
         type: Number,
         required: true
     },
+    ventaPor: {
+        type: String,
+        required: true,
+        trim: true,
+        uppercase: true,
+        enum: {
+            values: ['KILOGRAMO', 'PIEZA'],
+            messga: 'El valor {VALUE} no es soportado'
+        }
+    },
     activo: {
         type: Boolean,
         default: true
     }
 });
 
-productoModel.method('toJSON', function () {
+productoSchema.method('toJSON', function () {
     const { __v, _id, ...object } = this.toObject();
     object.id = _id;
     return object;
 });
 
-module.exports.Producto = model('Productos', productoModel);
+module.exports.Producto = model('Productos', productoSchema);

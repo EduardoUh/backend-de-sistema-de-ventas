@@ -3,10 +3,10 @@ const { Producto } = require('../models/Productos.js');
 
 
 module.exports.revisarProductoYaExiste = async (req = request, res = response, next) => {
-    const { nombre, descripcion, tipoProducto, proveedor, precio } = req.body;
+    const { nombre, descripcion, tipoProducto, proveedor, precio, ventaPor } = req.body;
 
     try {
-        const producto = await Producto.findOne({ nombre, descripcion, tipoProducto, proveedor, precio });
+        const producto = await Producto.findOne({ nombre, descripcion, tipoProducto, proveedor, precio, ventaPor });
 
         if (producto) {
             return res.status(409).json({

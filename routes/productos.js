@@ -1,10 +1,21 @@
 const express = require('express');
-const { body, param } = require('express-validator');
+const { body, param, ExpressValidator } = require('express-validator');
 const { verificarToken, exponerDatosUsuario, permitirSuperUsuariosYAdministradores, manejarResultados, revisarProductoYaExiste } = require('../middlewares/index.js');
 const { crearProducto, actualizarProducto, obtenerProductos, obtenerProducto } = require('../controllers/productos.js');
 
 
 const productosRouter = express.Router();
+
+/*
+const { body } = new ExpressValidator({}, {
+    isInOptions: async value => {
+        if (value !== 'KILOGRAMO' && value !== 'PIEZA') {
+            throw new Error('Valor en campo venta por es inválido');
+        }
+
+        return value;
+    }
+});*/
 
 const validadorNombre = () => body('nombre')
     .exists().withMessage('El nombre es requerido')
@@ -30,6 +41,19 @@ const validadorPrecio = () => body('precio')
     .exists().withMessage('El precio es requerido')
     .isFloat().withMessage('El precio debe ser númerico');
 
+const validadorVentaPor = () => body('ventaPor')
+    .exists().withMessage('El campo venta por es requerido')
+    .isString().withMessage('El campo venta por debe ser una cadena de texto')
+    .trim()
+    .notEmpty().withMessage('El campo venta por no puede ser una cadena de texto vacía')
+    .toUpperCase()
+    .custom(value => {
+        if (value !== 'KILOGRAMO' && value !== 'PIEZA') {
+            return false;
+        }
+        return true;
+    }).withMessage('El valor del campo venta por es inválido');
+
 const validadorActivo = () => body('activo')
     .exists().withMessage('El estatus es requerido')
     .isBoolean({ strict: true }).withMessage('Estatus inválido');
@@ -48,7 +72,8 @@ productosRouter.post('/productos',
         validadorDescripcion(),
         validadorIdBody('tipoProducto'),
         validadorIdBody('proveedor'),
-        validadorPrecio()
+        validadorPrecio(),
+        validadorVentaPor()
     ],
     manejarResultados,
     revisarProductoYaExiste,
@@ -66,6 +91,7 @@ productosRouter.put('/productos/:id',
         validadorIdBody('tipoProducto'),
         validadorIdBody('proveedor'),
         validadorPrecio(),
+        validadorVentaPor(),
         validadorActivo()
     ],
     manejarResultados,
