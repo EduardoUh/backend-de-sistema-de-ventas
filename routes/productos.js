@@ -1,5 +1,5 @@
 const express = require('express');
-const { body, param, ExpressValidator } = require('express-validator');
+const { body, param } = require('express-validator');
 const { verificarToken, exponerDatosUsuario, permitirSuperUsuariosYAdministradores, manejarResultados, revisarProductoYaExiste } = require('../middlewares/index.js');
 const { crearProducto, actualizarProducto, obtenerProductos, obtenerProducto } = require('../controllers/productos.js');
 
