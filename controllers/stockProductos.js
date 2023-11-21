@@ -179,3 +179,53 @@ module.exports.obtenerResgistrosStock = async (req = request, res = response) =>
         });
     }
 }
+
+module.exports.obtenerResgistrosStockParaVenta = async (req = request, res = response) => {
+    const { id: sucursalId } = req.params;
+    const { esAdministrador, esVendedor, sucursalUsuario } = req;
+
+    try {
+        if (esAdministrador && sucursalUsuario !== sucursalId || esVendedor && sucursalUsuario !== sucursalId) {
+            return res.status(401).json({
+                ok: false,
+                message: 'Sin acceso a ésa sucursal'
+            });
+        }
+
+        let stockProductos = await StockProductos.find({ sucursal: sucursalId, existencia: { $gt: 0 } })
+            .populate({
+                path: 'producto',
+                options: {
+                    transform: transformarDatosPopulatedProducto
+                }
+            })
+            .populate({
+                path: 'sucursal',
+                options: {
+                    transform: transformarDatosPopulatedSucursal
+                }
+            }).exec();
+
+        stockProductos = stockProductos.filter(stockProducto => stockProducto.sucursal.activa && stockProducto.producto.activo);
+
+        if (stockProductos.length === 0) {
+            return res.status(404).json({
+                ok: false,
+                message: 'No se encontraron registros'
+            });
+        }
+
+        res.status(200).json({
+            ok: true,
+            stockProductos
+        });
+
+    } catch (error) {
+        console.log(error);
+
+        res.status(500).json({
+            ok: false,
+            message: 'Algo salió mal al obtener los registros, intente de nuevo y si el fallo persiste contacte al administrador'
+        });
+    }
+}

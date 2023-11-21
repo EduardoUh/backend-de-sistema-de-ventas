@@ -1,7 +1,7 @@
 const express = require('express');
 const { body, param } = require('express-validator');
 const { verificarToken, exponerDatosUsuario, permitirSuperUsuariosYAdministradores, manejarResultados, revisarStockProductoYaExiste } = require('../middlewares/index.js');
-const { crearStockProducto, actualizarStock, obtenerResgistrosStock } = require('../controllers/stockProductos.js');
+const { crearStockProducto, actualizarStock, obtenerResgistrosStock, obtenerResgistrosStockParaVenta } = require('../controllers/stockProductos.js');
 
 
 const stockProductoRouter = express.Router();
@@ -64,6 +64,14 @@ stockProductoRouter.get('/stockProductos',
     exponerDatosUsuario,
     permitirSuperUsuariosYAdministradores,
     obtenerResgistrosStock
+);
+
+stockProductoRouter.get('/stockProductos/sucursal/:id',
+    verificarToken,
+    exponerDatosUsuario,
+    validadorId(),
+    manejarResultados,
+    obtenerResgistrosStockParaVenta
 );
 
 module.exports = {
