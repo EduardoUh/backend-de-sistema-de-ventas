@@ -1,5 +1,5 @@
 const { request, response } = require('express');
-const { filtrarQueryParams } = require('../helpers/index.js');
+const { filtrarQueryParams, transformarDatosPopulatedProducto, transformarDatosPopulatedSucursal } = require('../helpers/index.js');
 const { Producto, Sucursal, StockProductos } = require('../models/index.js');
 
 
@@ -110,6 +110,72 @@ module.exports.actualizarStock = async (req = request, res = response) => {
         res.status(500).json({
             ok: false,
             message: 'Algo salió mal al actualizar el stock, intente de nuevo y si el fallo persiste contacte al administrador'
+        });
+    }
+}
+
+module.exports.obtenerResgistrosStock = async (req = request, res = response) => {
+    const queryParams = req.query;
+    const { esAdministrador, sucursalUsuario } = req;
+
+    try {
+        let stockProductos;
+
+        if (esAdministrador) {
+            const params = filtrarQueryParams(queryParams, ['producto']);
+
+            params.sucursal = sucursalUsuario;
+
+            stockProductos = await StockProductos.find(params)
+                .populate({
+                    path: 'producto',
+                    options: {
+                        transform: transformarDatosPopulatedProducto
+                    }
+                })
+                .populate({
+                    path: 'sucursal',
+                    options: {
+                        transform: transformarDatosPopulatedSucursal
+                    }
+                });
+        }
+        else {
+            const params = filtrarQueryParams(queryParams, ['producto', 'sucursal']);
+
+            stockProductos = await StockProductos.find(params)
+                .populate({
+                    path: 'producto',
+                    options: {
+                        transform: transformarDatosPopulatedProducto
+                    }
+                })
+                .populate({
+                    path: 'sucursal',
+                    options: {
+                        transform: transformarDatosPopulatedSucursal
+                    }
+                });
+        }
+
+        if (stockProductos.length === 0) {
+            return res.status(404).json({
+                ok: false,
+                message: 'No se encontraron registros'
+            });
+        }
+
+        res.status(200).json({
+            ok: true,
+            stockProductos
+        });
+
+    } catch (error) {
+        console.log(error);
+
+        res.status(500).json({
+            ok: false,
+            message: 'Algo salió mal obtener los registros, intente de nuevo y si el fallo persiste contacte al administrador'
         });
     }
 }
