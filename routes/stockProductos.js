@@ -27,6 +27,10 @@ const validadorExistencia = () => body('existencia')
         return true;
     }).withMessage('La existencia debe contener dos decimales como máximo');
 
+const validadorId = () => param('id')
+    .exists().withMessage('El id es requerido')
+    .isMongoId().withMessage('Id inválido');
+
 stockProductoRouter.post('/stockProductos',
     verificarToken,
     exponerDatosUsuario,
@@ -46,6 +50,7 @@ stockProductoRouter.put('/stockProductos/:id',
     exponerDatosUsuario,
     permitirSuperUsuariosYAdministradores,
     [
+        validadorId(),
         validadorProductoId(),
         validadorSucursalId(),
         validadorExistencia()
