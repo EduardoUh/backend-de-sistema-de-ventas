@@ -1,13 +1,28 @@
 const { request, response } = require('express');
 const { filtrarQueryParams, transformarDatosPopulatedTipoProducto, transformarDatosPopulatedProveedor } = require('../helpers/index.js');
-const { Producto } = require('../models/index.js');
+const { Producto, TipoProducto, Proveedor } = require('../models/index.js');
 
 
 module.exports.crearProducto = async (req = request, res = response) => {
     const { nombre, descripcion, tipoProducto, proveedor, precio, ventaPor } = req.body;
 
     try {
-        const producto = new Producto({ nombre, descripcion, tipoProducto, proveedor, precio, ventaPor });
+        const promises = [TipoProducto.findById(tipoProducto)];
+
+        if (proveedor) {
+            promises.push(Proveedor.findById(proveedor));
+        }
+
+        const [tipoProductoBd, proveedorBd] = await Promise.all(promises);
+
+        if (!tipoProductoBd || proveedor && !proveedorBd) {
+            return res.status(404).json({
+                ok: false,
+                message: 'El proveedor y/o el tipo producto no han sido encontrados'
+            });
+        }
+
+        const producto = new Producto({ nombre, descripcion, tipoProducto, proveedor: proveedor ? proveedor : null, precio, ventaPor });
 
         await producto.save();
 

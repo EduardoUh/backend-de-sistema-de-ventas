@@ -22,9 +22,7 @@ const validadorDescripcion = () => body('descripcion')
 
 const validadorIdBody = (id) => body(id)
     .exists().withMessage(`El ${id === 'proveedor' ? 'proveedor' : 'tipo de producto'} es requerido`)
-    .isString().withMessage(`El ${id === 'proveedor' ? 'proveedor' : 'tipo de producto'} debe ser una cadena de texto`)
-    .trim()
-    .isLength({ min: 24, max: 24 }).withMessage(`El formato del ${id === 'proveedor' ? 'proveedor' : 'tipo de producto'} es inválido`);
+    .isMongoId().withMessage(`El formato del ${id === 'proveedor' ? 'proveedor' : 'tipo de producto'} es inválido`);
 
 const validadorPrecio = () => body('precio')
     .exists().withMessage('El precio es requerido')
@@ -60,7 +58,6 @@ productosRouter.post('/productos',
         validadorNombre(),
         validadorDescripcion(),
         validadorIdBody('tipoProducto'),
-        validadorIdBody('proveedor'),
         validadorPrecio(),
         validadorVentaPor()
     ],
