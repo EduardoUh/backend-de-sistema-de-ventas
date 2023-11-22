@@ -229,3 +229,51 @@ module.exports.obtenerResgistrosStockParaVenta = async (req = request, res = res
         });
     }
 }
+
+module.exports.obtenerStockPorId = async (req = request, res = response) => {
+    const { id: stockId } = req.params;
+    const { esAdministrador, sucursalUsuario } = req;
+
+    try {
+        const stock = await StockProductos.findById(stockId)
+            .populate({
+                path: 'producto',
+                options: {
+                    transform: transformarDatosPopulatedProducto
+                }
+            })
+            .populate({
+                path: 'sucursal',
+                options: {
+                    transform: transformarDatosPopulatedSucursal
+                }
+            });
+
+        if (!stock) {
+            return res.status(404).json({
+                ok: false,
+                message: 'Stock no encontrado'
+            });
+        }
+
+        if (esAdministrador && sucursalUsuario !== stock.sucursal.id.toString()) {
+            return res.status(401).json({
+                ok: false,
+                message: 'Sin acceso al stock de ésa sucursal'
+            });
+        }
+
+        res.status(200).json({
+            ok: true,
+            stock
+        });
+
+    } catch (error) {
+        console.log(error);
+
+        res.status(500).json({
+            ok: false,
+            message: 'Algo salió mal al obtener el registro, intente de nuevo y si el fallo persiste contacte al administrador'
+        })
+    }
+}
