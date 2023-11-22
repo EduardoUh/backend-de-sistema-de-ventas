@@ -1,5 +1,7 @@
 module.exports.transformarDatosPopulatedSucursal = (documento) => {
-    const { nombre } = documento.toObject();
+    const { __v, _id, ciudad, direccion, email, creador, ...object } = documento.toObject();
 
-    return nombre;
+    object.id = _id;
+
+    return object;
 }

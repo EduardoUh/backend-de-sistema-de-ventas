@@ -3,7 +3,7 @@ require('dotenv').config();
 const cors = require('cors');
 const path = require('path');
 const { connectDb } = require('./db/config.js');
-const { authRouter, sucursalesRouter, usuariosRouter, rolesRouter, proveedoresRouter, tiposProductosRouter, productosRouter } = require('./routes/index.js');
+const { authRouter, sucursalesRouter, usuariosRouter, rolesRouter, proveedoresRouter, tiposProductosRouter, productosRouter, stockProductoRouter } = require('./routes/index.js');
 
 const app = express();
 
@@ -21,6 +21,7 @@ const startServer = async () => {
     app.use('/api/v1', proveedoresRouter);
     app.use('/api/v1', tiposProductosRouter);
     app.use('/api/v1', productosRouter);
+    app.use('/api/v1', stockProductoRouter);
 
     app.get('*', (req, res) => {
         res.sendFile(path.join(__dirname, '/public/index.html'));
