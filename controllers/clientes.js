@@ -26,3 +26,49 @@ module.exports.crearCliente = async (req = request, res = response) => {
         });
     }
 }
+
+module.exports.actualizarCliente = async (req = request, res = response) => {
+    const { nombres, apellidoPaterno, apellidoMaterno, rfc, email, numTelefono, direccion, activo } = req.body;
+    const { id: clienteId } = req.params;
+    const { uId: usuarioId } = req;
+
+    try {
+        const [clientById, clientByRfc, clientByEmail] = await Promise.all([Cliente.findById(clienteId), Cliente.findOne({ rfc }), Cliente.findOne({ email })]);
+
+        if (clientById === null) {
+            return res.status(404).json({
+                ok: false,
+                message: 'Cliente no encontrado'
+            });
+        }
+
+        if (clientByRfc !== null && clientById.id !== clientByRfc.id) {
+            return res.status(409).json({
+                ok: false,
+                message: 'Ya existe un cliente con ése email o rfc'
+            });
+        }
+
+        if (clientByEmail !== null && clientById.id !== clientByEmail.id) {
+            return res.status(409).json({
+                ok: false,
+                message: 'Ya existe un cliente con ése email o rfc'
+            });
+        }
+
+        await clientById.updateOne({ nombres, apellidoPaterno, apellidoMaterno, rfc, email, numTelefono, direccion, activo, ultimoEnModificar: usuarioId, fechaUltimaModificacion: Date.now() });
+
+        res.status(200).json({
+            ok: true,
+            message: `Cliente ${nombres} actualizado con éxito`
+        })
+
+    } catch (error) {
+        console.log(error);
+
+        res.status(500).json({
+            ok: false,
+            message: 'Algo salió mal al actualizar el cliente, intente de nuevo y si el fallo persiste contacte al administador'
+        });
+    }
+}
