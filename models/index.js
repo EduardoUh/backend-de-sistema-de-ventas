@@ -5,6 +5,7 @@ const { Proveedor } = require('./Proveedores.js');
 const { TipoProducto } = require('./TiposProductos.js');
 const { Producto } = require('./Productos.js');
 const { StockProductos } = require('./StockProductos.js');
+const { Cliente } = require('./Clientes.js');
 
 module.exports = {
     Rol,
@@ -13,5 +14,6 @@ module.exports = {
     Proveedor,
     TipoProducto,
     Producto,
-    StockProductos
+    StockProductos,
+    Cliente
 };
