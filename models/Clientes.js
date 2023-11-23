@@ -60,7 +60,7 @@ const clienteSchema = new Schema({
         required: true
     },
     fechaUltimaModificacion: {
-        type: String,
+        type: Number,
         required: true
     }
 });
