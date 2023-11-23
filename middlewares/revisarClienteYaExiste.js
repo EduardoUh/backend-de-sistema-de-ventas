@@ -10,7 +10,7 @@ module.exports.revisarClienteYaExiste = async (req = request, res = response, ne
         if (cliente.length > 0) {
             return res.status(409).json({
                 ok: false,
-                message: 'Ya existe un usuario con esos datos'
+                message: 'Ya existe un cliente con esos datos'
             })
         }
 
