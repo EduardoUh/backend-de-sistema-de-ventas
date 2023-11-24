@@ -1,5 +1,5 @@
 const { request, response } = require('express');
-const { filtrarQueryParams } = require('../helpers/index.js');
+const { filtrarQueryParams, transformarDatosPopulatedUsuario, transformarDatosPopulateRol } = require('../helpers/index.js');
 const { Cliente } = require('../models/index.js');
 
 
@@ -69,6 +69,72 @@ module.exports.actualizarCliente = async (req = request, res = response) => {
         res.status(500).json({
             ok: false,
             message: 'Algo salió mal al actualizar el cliente, intente de nuevo y si el fallo persiste contacte al administador'
+        });
+    }
+}
+
+module.exports.ObtenerClientes = async (req = request, res = response) => {
+    const queryParams = req.query;
+
+    try {
+        const params = filtrarQueryParams(queryParams, [
+            'nombres',
+            'apellidoPaterno',
+            'apellidoMaterno',
+            'rfc',
+            'email',
+            'numTelefono',
+            'activo',
+            'creador',
+            'fechaCreacion',
+            'ultimoEnModificar',
+            'fechaUltimaModificacion'
+        ]);
+
+        const clientes = await Cliente.find(params)
+            .populate({
+                path: 'creador',
+                options: {
+                    transform: transformarDatosPopulatedUsuario
+                },
+                populate: {
+                    path: 'rol',
+                    options: {
+                        transform: transformarDatosPopulateRol
+                    }
+                }
+            })
+            .populate({
+                path: 'ultimoEnModificar',
+                options: {
+                    transform: transformarDatosPopulatedUsuario
+                },
+                populate: {
+                    path: 'rol',
+                    options: {
+                        transform: transformarDatosPopulateRol
+                    }
+                }
+            });
+
+        if (clientes.length === 0) {
+            return res.status(404).json({
+                ok: false,
+                message: 'No se encontraron registros'
+            });
+        }
+
+        res.status(200).json({
+            ok: true,
+            clientes
+        });
+
+    } catch (error) {
+        console.log(error);
+
+        res.status(500).json({
+            ok: false,
+            message: 'Algo salió mal al obtener los registros, intente de nuevo y si el fallo persiste contacte al administrador'
         });
     }
 }
