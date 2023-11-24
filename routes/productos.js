@@ -58,6 +58,7 @@ productosRouter.post('/productos',
         validadorNombre(),
         validadorDescripcion(),
         validadorIdBody('tipoProducto'),
+        validadorIdBody('proveedor'),
         validadorPrecio(),
         validadorVentaPor()
     ],

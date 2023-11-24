@@ -22,7 +22,7 @@ const productoSchema = new Schema({
     proveedor: {
         type: Schema.Types.ObjectId,
         ref: 'Proveedores',
-        default: null
+        required: true
     },
     precio: {
         type: Number,
