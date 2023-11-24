@@ -63,7 +63,7 @@ module.exports.obtenerSucursalPorId = async (req = request, res = response) => {
         const sucursal = await Sucursal.findById(id)
             .populate({
                 path: 'creador',
-                select: 'nombre apellidoPaterno apellidoMaterno rol email numTelefono -_id',
+                select: 'nombres apellidoPaterno apellidoMaterno rol email numTelefono -_id',
                 populate: {
                     path: 'rol',
                     options: {
@@ -103,7 +103,7 @@ module.exports.obtenerSucursales = async (req = request, res = response) => {
         const sucursales = await Sucursal.find(params)
             .populate({
                 path: 'creador',
-                select: 'nombre apellidoPaterno apellidoMaterno rol email numTelefono -_id',
+                select: 'nombres apellidoPaterno apellidoMaterno rol email numTelefono -_id',
                 populate: {
                     path: 'rol',
                     options: {
