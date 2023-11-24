@@ -138,3 +138,55 @@ module.exports.ObtenerClientes = async (req = request, res = response) => {
         });
     }
 }
+
+module.exports.obtenerCliente = async (req = request, res = response) => {
+    const { id: clienteId } = req.params;
+
+    try {
+        const cliente = await Cliente.findById(clienteId)
+            .populate({
+                path: 'creador',
+                options: {
+                    transform: transformarDatosPopulatedUsuario
+                },
+                populate: {
+                    path: 'rol',
+                    options: {
+                        transform: transformarDatosPopulateRol
+                    }
+                }
+            })
+            .populate({
+                path: 'ultimoEnModificar',
+                options: {
+                    transform: transformarDatosPopulatedUsuario
+                },
+                populate: {
+                    path: 'rol',
+                    options: {
+                        transform: transformarDatosPopulateRol
+                    }
+                }
+            });
+
+        if (cliente === null) {
+            return res.status(404).json({
+                ok: false,
+                message: 'Cliente no encontrado'
+            });
+        }
+
+        res.status(200).json({
+            ok: true,
+            cliente
+        });
+
+    } catch (error) {
+        console.log(error);
+
+        res.status(500).json({
+            ok: false,
+            message: 'Algo salió mal al obtener el cliente, intente de nuevo y si el fallo persiste contacte al administrador'
+        });
+    }
+}

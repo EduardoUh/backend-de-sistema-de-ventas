@@ -1,7 +1,7 @@
 const express = require('express');
 const { body, param } = require('express-validator');
 const { verificarToken, exponerDatosUsuario, permitirSuperUsuariosYAdministradores, manejarResultados, revisarClienteYaExiste } = require('../middlewares/index.js');
-const { crearCliente, actualizarCliente, ObtenerClientes } = require('../controllers/clientes.js');
+const { crearCliente, actualizarCliente, ObtenerClientes, obtenerCliente } = require('../controllers/clientes.js');
 
 const clientesRouter = express.Router();
 
@@ -98,6 +98,15 @@ clientesRouter.get('/clientes',
     verificarToken,
     exponerDatosUsuario,
     ObtenerClientes
+);
+
+clientesRouter.get('/clientes/:id',
+    verificarToken,
+    exponerDatosUsuario,
+    permitirSuperUsuariosYAdministradores,
+    validadorIdParam(),
+    manejarResultados,
+    obtenerCliente
 );
 
 module.exports = { clientesRouter }
