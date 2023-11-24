@@ -5,6 +5,7 @@ const { transformarDatosPopulatedSucursal } = require('./transformarDatosPopulat
 const { transformarDatosPopulatedTipoProducto } = require('./transformarDatosPopulatedTipoProducto.js')
 const { transformarDatosPopulatedProveedor } = require('./transformarDatosPopulatedProveedor.js');
 const { transformarDatosPopulatedProducto } = require('./transformarDatosPopulatedProducto.js');
+const { transformarDatosPopulatedUsuario } = require('./transformarDatosPopulatedUsuario.js');
 const { filtrarQueryParams } = require('./filtrarQueryParams.js');
 
 module.exports = {
@@ -15,5 +16,6 @@ module.exports = {
     transformarDatosPopulatedTipoProducto,
     transformarDatosPopulatedProveedor,
     transformarDatosPopulatedProducto,
+    transformarDatosPopulatedUsuario,
     filtrarQueryParams
 };

@@ -6,6 +6,7 @@ const { proveedoresRouter } = require('./proveedores.js');
 const { tiposProductosRouter } = require('./tiposProductos.js');
 const { productosRouter } = require('./productos.js');
 const { stockProductoRouter } = require('./stockProductos.js');
+const { clientesRouter } = require('./clientes.js');
 
 module.exports = {
     authRouter,
@@ -15,5 +16,6 @@ module.exports = {
     proveedoresRouter,
     tiposProductosRouter,
     productosRouter,
-    stockProductoRouter
+    stockProductoRouter,
+    clientesRouter
 }
