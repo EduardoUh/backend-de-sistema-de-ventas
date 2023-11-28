@@ -1,6 +1,6 @@
 const { request, response } = require('express');
 const { isObjectIdOrHexString, startSession } = require('mongoose');
-const { filtrarQueryParams, transformarDatosPopulatedSucursal, transformarDatosPopulatedUsuario, transformarDatosPopulatedProducto, } = require('../helpers/index.js');
+const { filtrarQueryParams, transformarDatosPopulatedSucursal, transformarDatosPopulatedUsuario, transformarDatosPopulateRol, transformarDatosPopulatedProducto, transformarDatosPopulatedCliente } = require('../helpers/index.js');
 const { Venta, Pago, Sucursal, Cliente, Producto, StockProductos } = require('../models/index.js');
 
 
@@ -98,5 +98,77 @@ module.exports.crearVenta = async (req = request, res = response) => {
     }
     finally {
         await session.endSession();
+    }
+}
+
+module.exports.obtenerVentas = async (req = request, res = response) => {
+    const queryParams = req.query;
+    const { esAdministrador, esVendedor, sucursalUsuario } = req;
+
+    try {
+        if (queryParams?.sucursal !== sucursalUsuario) {
+            return res.status(401).json({
+                ok: false,
+                message: 'Sin acceso a ésa sucursal'
+            });
+        }
+
+        const params = filtrarQueryParams(queryParams, ['sucursal', 'creador', 'cliente', 'saldada', 'fechaCreacion']);
+
+        if (esAdministrador || esVendedor) {
+            params.sucursal = sucursalUsuario;
+        }
+
+        const ventas = await Venta.find(params)
+            .populate({
+                path: 'sucursal',
+                options: {
+                    transform: transformarDatosPopulatedSucursal
+                }
+            })
+            .populate({
+                path: 'creador',
+                options: {
+                    transform: transformarDatosPopulatedUsuario
+                },
+                populate: {
+                    path: 'rol',
+                    options: {
+                        transform: transformarDatosPopulateRol
+                    }
+                }
+            })
+            .populate({
+                path: 'cliente',
+                options: {
+                    transform: transformarDatosPopulatedCliente
+                }
+            })
+            .populate({
+                path: 'articulos.producto',
+                options: {
+                    transform: transformarDatosPopulatedProducto
+                }
+            });
+
+        if (ventas.length === 0) {
+            return res.status(404).json({
+                ok: false,
+                message: 'No se encontraron registros'
+            });
+        }
+
+        res.status(200).json({
+            ok: true,
+            ventas
+        })
+
+    } catch (error) {
+        console.log(error);
+
+        res.status(500).json({
+            ok: false,
+            message: 'Algo salió mal al obtener los registros, intente de nuevo y si el fallo persiste contacte al administrador'
+        });
     }
 }

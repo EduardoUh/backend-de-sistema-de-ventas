@@ -2,7 +2,7 @@ const express = require('express');
 const { body, param } = require('express-validator');
 const { isObjectIdOrHexString } = require('mongoose');
 const { verificarToken, exponerDatosUsuario, permitirSuperUsuarios, manejarResultados } = require('../middlewares/index.js');
-const { crearVenta } = require('../controllers/ventas.js');
+const { crearVenta, obtenerVentas } = require('../controllers/ventas.js');
 
 
 const ventasRouter = express.Router();
@@ -58,6 +58,12 @@ ventasRouter.post('/ventas',
     ],
     manejarResultados,
     crearVenta
+);
+
+ventasRouter.get('/ventas',
+    verificarToken,
+    exponerDatosUsuario,
+    obtenerVentas
 );
 
 module.exports = {
