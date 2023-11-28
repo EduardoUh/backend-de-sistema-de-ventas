@@ -172,3 +172,69 @@ module.exports.obtenerVentas = async (req = request, res = response) => {
         });
     }
 }
+
+module.exports.obtenerVenta = async (req = request, res = response) => {
+    const { id: ventaId } = req.params;
+    const { esAdministrador, esVendedor, sucursalUsuario } = req;
+
+    try {
+        const venta = await Venta.findById(ventaId)
+            .populate({
+                path: 'sucursal',
+                options: {
+                    transform: transformarDatosPopulatedSucursal
+                }
+            })
+            .populate({
+                path: 'creador',
+                options: {
+                    transform: transformarDatosPopulatedUsuario
+                },
+                populate: {
+                    path: 'rol',
+                    options: {
+                        transform: transformarDatosPopulateRol
+                    }
+                }
+            })
+            .populate({
+                path: 'cliente',
+                options: {
+                    transform: transformarDatosPopulatedCliente
+                }
+            })
+            .populate({
+                path: 'articulos.producto',
+                options: {
+                    transform: transformarDatosPopulatedProducto
+                }
+            });
+
+        if (!venta) {
+            return res.status(404).json({
+                ok: false,
+                message: 'Venta inexistente'
+            });
+        }
+
+        if (esAdministrador && sucursalUsuario !== venta.sucursal.id.toHexString() || esVendedor && sucursalUsuario !== venta.sucursal.id.toHexString()) {
+            return res.status(401).json({
+                ok: false,
+                message: 'Sin acceso a ésa sucursal'
+            });
+        }
+
+        res.status(200).json({
+            ok: true,
+            venta
+        });
+
+    } catch (error) {
+        console.log(error);
+
+        res.status(500).json({
+            ok: false,
+            message: 'Algo salió mal al obtener la venta, intente de nuevo y si el fallo persiste contacte al administrador'
+        });
+    }
+}

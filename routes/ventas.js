@@ -2,7 +2,7 @@ const express = require('express');
 const { body, param } = require('express-validator');
 const { isObjectIdOrHexString } = require('mongoose');
 const { verificarToken, exponerDatosUsuario, permitirSuperUsuarios, manejarResultados } = require('../middlewares/index.js');
-const { crearVenta, obtenerVentas } = require('../controllers/ventas.js');
+const { crearVenta, obtenerVentas, obtenerVenta } = require('../controllers/ventas.js');
 
 
 const ventasRouter = express.Router();
@@ -43,6 +43,9 @@ const validadorCantidad = (name, min) => body(name)
         return true;
     }).withMessage(`El campo ${name} debe contener como máximo dos decimales`);
 
+const validadorIdParam = () => param('id')
+    .exists().withMessage('El id de la venta es requerido')
+    .isMongoId().withMessage('Id inválido');
 
 ventasRouter.post('/ventas',
     verificarToken,
@@ -64,6 +67,14 @@ ventasRouter.get('/ventas',
     verificarToken,
     exponerDatosUsuario,
     obtenerVentas
+);
+
+ventasRouter.get('/ventas/:id',
+    verificarToken,
+    exponerDatosUsuario,
+    validadorIdParam(),
+    manejarResultados,
+    obtenerVenta
 );
 
 module.exports = {
