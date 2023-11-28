@@ -82,7 +82,7 @@ module.exports.crearVenta = async (req = request, res = response) => {
 
         await session.commitTransaction();
 
-        res.status(200).json({
+        res.status(201).json({
             ok: true,
             message: 'Venta registrada correctamente'
         });
