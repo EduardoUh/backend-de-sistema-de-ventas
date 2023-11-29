@@ -8,6 +8,7 @@ const { productosRouter } = require('./productos.js');
 const { stockProductoRouter } = require('./stockProductos.js');
 const { clientesRouter } = require('./clientes.js');
 const { ventasRouter } = require('./ventas.js');
+const { pagosRouter } = require('./pagos.js');
 
 module.exports = {
     authRouter,
@@ -19,5 +20,6 @@ module.exports = {
     productosRouter,
     stockProductoRouter,
     clientesRouter,
-    ventasRouter
+    ventasRouter,
+    pagosRouter
 }
