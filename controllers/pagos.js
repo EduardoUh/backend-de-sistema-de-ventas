@@ -1,6 +1,6 @@
 const { request, response } = require('express');
 const { startSession } = require('mongoose');
-const { filtrarQueryParams } = require('../helpers/index.js');
+const { transformarDatosPopulatedUsuario, transformarDatosPopulateRol } = require('../helpers/index.js');
 const { Venta, Pago } = require('../models/index.js');
 
 
@@ -81,5 +81,62 @@ module.exports.crearPago = async (req = request, res = response) => {
     }
     finally {
         await session.endSession();
+    }
+}
+
+module.exports.ObtenerPagosPorVenta = async (req = request, res = response) => {
+    const { id: ventaId } = req.params;
+    const { esAdministrador, esVendedor, sucursalUsuario } = req;
+
+    try {
+        const venta = await Venta.findById(ventaId);
+
+        if (!venta) {
+            return res.status(404).json({
+                ok: false,
+                message: 'Venta inexistente'
+            });
+        }
+
+        if (esAdministrador && sucursalUsuario !== venta.sucursal.toHexString() || esVendedor && sucursalUsuario !== venta.sucursal.toHexString()) {
+            return res.status(401).json({
+                ok: false,
+                message: 'Sin acceso a ésa sucursal'
+            });
+        }
+
+        const pagos = await Pago.find({ venta: ventaId })
+            .populate({
+                path: 'creador',
+                options: {
+                    transform: transformarDatosPopulatedUsuario
+                },
+                populate: {
+                    path: 'rol',
+                    options: {
+                        transform: transformarDatosPopulateRol
+                    }
+                }
+            });
+
+        if (pagos.length === 0) {
+            return res.status(404).json({
+                ok: false,
+                message: 'No se encontraron registros'
+            });
+        }
+
+        res.status(200).json({
+            ok: true,
+            pagos
+        });
+
+    } catch (error) {
+        console.log(error);
+
+        res.status(500).json({
+            ok: false,
+            message: 'Algo salió mal al obtener los registros, intente de nuevo y si el fallo persiste contacte al administrador'
+        });
     }
 }

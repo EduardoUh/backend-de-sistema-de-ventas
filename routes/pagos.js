@@ -1,7 +1,7 @@
 const express = require('express');
 const { body, param } = require('express-validator');
 const { verificarToken, exponerDatosUsuario, manejarResultados } = require('../middlewares/index.js');
-const { crearPago } = require('../controllers/pagos.js');
+const { crearPago, ObtenerPagosPorVenta } = require('../controllers/pagos.js');
 
 
 const pagosRouter = express.Router();
@@ -41,6 +41,14 @@ pagosRouter.post('/pagos',
     ],
     manejarResultados,
     crearPago
+);
+
+pagosRouter.get('/pagos/venta/:id',
+    verificarToken,
+    exponerDatosUsuario,
+    validadorIdParam(),
+    manejarResultados,
+    ObtenerPagosPorVenta
 );
 
 module.exports = {
