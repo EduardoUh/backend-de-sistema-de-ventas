@@ -17,6 +17,13 @@ module.exports.crearVenta = async (req = request, res = response) => {
             });
         }
 
+        if (pago > pagoCon || cambio > pagoCon || pago > total || saldo > total) {
+            return res.status(403).json({
+                ok: false,
+                message: 'Hay errores en alguno de los siguientes campos: pago con, pago, cambio'
+            });
+        }
+
         if (cliente && !isObjectIdOrHexString(cliente)) {
             return res.status(400).json({
                 ok: false,
