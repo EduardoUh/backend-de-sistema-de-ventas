@@ -14,9 +14,9 @@ const validadorSucursalId = () => body('sucursal')
     .exists().withMessage('La sucursal es requerida')
     .isMongoId().withMessage('Sucursal inválida');
 
-const validadorExistencia = () => body('existencia')
-    .exists().withMessage('La existencia del producto es requerida')
-    .isFloat({ gt: 0, min: 1 }).withMessage('La existencia debe ser un valor númerico de por lo menos un kg o una pieza')
+const validadorCantidades = (nombre) => body(nombre)
+    .exists().withMessage(`El campo ${nombre} es requerido`)
+    .isFloat({ gt: 0 }).withMessage(`El campo ${nombre} debe ser un valor númerico mayor a cero`)
     .custom(value => {
         const decimalsArray = String(value).split('.');
 
@@ -25,7 +25,7 @@ const validadorExistencia = () => body('existencia')
         }
 
         return true;
-    }).withMessage('La existencia debe contener dos decimales como máximo');
+    }).withMessage(`El campo ${nombre} debe contener dos decimales como máximo`);
 
 const validadorId = () => param('id')
     .exists().withMessage('El id es requerido')
@@ -38,7 +38,8 @@ stockProductoRouter.post('/stockProductos',
     [
         validadorProductoId(),
         validadorSucursalId(),
-        validadorExistencia()
+        validadorCantidades('existencia'),
+        validadorCantidades('precio')
     ],
     manejarResultados,
     revisarStockProductoYaExiste,
@@ -51,9 +52,8 @@ stockProductoRouter.put('/stockProductos/:id',
     permitirSuperUsuariosYAdministradores,
     [
         validadorId(),
-        validadorProductoId(),
-        validadorSucursalId(),
-        validadorExistencia()
+        validadorCantidades('existencia'),
+        validadorCantidades('precio')
     ],
     manejarResultados,
     actualizarStock

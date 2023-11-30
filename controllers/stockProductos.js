@@ -1,35 +1,34 @@
 const { request, response } = require('express');
-const { filtrarQueryParams, transformarDatosPopulatedProducto, transformarDatosPopulatedSucursal } = require('../helpers/index.js');
+const { Types } = require('mongoose');
+const { filtrarQueryParams, transformarDatosPopulatedProducto, transformarDatosPopulatedSucursal, transformarDatosPopulatedUsuario, transformarDatosPopulateRol } = require('../helpers/index.js');
 const { Producto, Sucursal, StockProductos } = require('../models/index.js');
 
 
 module.exports.crearStockProducto = async (req = request, res = response) => {
-    const { producto: productoId, sucursal: sucursalId, existencia } = req.body;
-    const { esAdministrador, sucursalUsuario } = req;
+    const { producto: productoId, sucursal: sucursalId, existencia, precio } = req.body;
+    const { uId, esAdministrador, sucursalUsuario } = req;
 
     try {
-        const promises = [Producto.findById(productoId), Sucursal.findById(sucursalId)];
+        if (esAdministrador && sucursalUsuario !== sucursalId) {
+            return res.status(401).json({
+                ok: false,
+                message: 'Sin acceso a ésta sucursal'
+            });
+        }
 
-        const [producto, sucursal] = await Promise.all(promises);
+        const [producto, sucursal] = await Promise.all([Producto.findById(productoId), Sucursal.findById(sucursalId)]);
 
         if (!producto || !sucursal) {
             return res.status(404).json({
                 ok: false,
-                message: 'Producto o sucursal no encontrado'
+                message: 'Producto o sucursal no encontrados'
             });
         }
 
         if (!producto.activo || !sucursal.activa) {
             return res.status(403).json({
                 ok: false,
-                message: 'El producto o la sucursal se encuentra desactivado'
-            });
-        }
-
-        if (esAdministrador && sucursalUsuario !== sucursalId) {
-            return res.status(401).json({
-                ok: false,
-                message: 'Sin acceso a ésta sucursal'
+                message: 'El producto o la sucursal se encuentran desactivados'
             });
         }
 
@@ -40,7 +39,7 @@ module.exports.crearStockProducto = async (req = request, res = response) => {
             });
         }
 
-        const stockProducto = new StockProductos({ producto: productoId, sucursal: sucursalId, existencia });
+        const stockProducto = new StockProductos({ sucursal: sucursalId, producto: productoId, existencia, precio, creador: uId, fechaCreacion: Date.now(), ultimoEnModificar: uId, fechaUltimaModificacion: Date.now() });
 
         await stockProducto.save();
 
@@ -60,48 +59,48 @@ module.exports.crearStockProducto = async (req = request, res = response) => {
 }
 
 module.exports.actualizarStock = async (req = request, res = response) => {
-    const { producto: productoId, sucursal: sucursalId, existencia } = req.body;
+    const { existencia, precio } = req.body;
     const { id: stockId } = req.params;
-    const { esAdministrador, sucursalUsuario } = req;
+    const { uId, esAdministrador, sucursalUsuario } = req;
 
     try {
-        const promises = [Producto.findById(productoId), Sucursal.findById(sucursalId), StockProductos.findById(stockId)];
+        const stockProducto = await StockProductos.findById(stockId)
+            .populate('sucursal')
+            .populate('producto');
 
-        const [producto, sucursal, stockProducto] = await Promise.all(promises);
-
-        if (!producto || !sucursal || !stockProducto) {
+        if (!stockProducto) {
             return res.status(404).json({
                 ok: false,
-                message: 'Producto, sucursal o stock no encontrado'
+                message: 'Stock no encontrado'
             });
         }
 
-        if (!producto.activo || !sucursal.activa) {
+        if (!stockProducto.producto.activo || !stockProducto.sucursal.activa) {
             return res.status(403).json({
                 ok: false,
                 message: 'El producto o la sucursal se encuentran desactivados'
             });
         }
 
-        if (esAdministrador && sucursalUsuario !== sucursalId) {
+        if (esAdministrador && sucursalUsuario !== stockProducto.sucursal._id.toHexString()) {
             return res.status(401).json({
                 ok: false,
                 message: 'Sin acceso a ésta sucursal'
             });
         }
 
-        if (producto.ventaPor === 'PIEZA' && existencia % 1 > 0) {
+        if (stockProducto.producto.ventaPor === 'PIEZA' && existencia % 1 > 0) {
             return res.status(403).json({
                 ok: false,
                 message: 'El producto se vende por piezas, por lo que no se aceptan decimales'
             });
         }
 
-        await stockProducto.updateOne({ existencia });
+        await stockProducto.updateOne({ existencia, precio, ultimoEnModificar: uId, fechaUltimaModificacion: Date.now() });
 
         res.status(200).json({
             ok: true,
-            message: `Stock del producto ${producto.nombre} actualizado con éxito`
+            message: `Stock del producto ${stockProducto.producto.nombre} actualizado con éxito`
         })
 
     } catch (error) {
@@ -122,7 +121,7 @@ module.exports.obtenerResgistrosStock = async (req = request, res = response) =>
         let stockProductos;
 
         if (esAdministrador) {
-            const params = filtrarQueryParams(queryParams, ['producto']);
+            const params = filtrarQueryParams(queryParams, ['producto', 'existencia', 'precio', 'creador', 'fechaCreacion', 'ultimoEnModificar', 'fechaUltimaModificacion']);
 
             params.sucursal = sucursalUsuario;
 
@@ -138,10 +137,34 @@ module.exports.obtenerResgistrosStock = async (req = request, res = response) =>
                     options: {
                         transform: transformarDatosPopulatedSucursal
                     }
+                })
+                .populate({
+                    path: 'creador',
+                    options: {
+                        transform: transformarDatosPopulatedUsuario
+                    },
+                    populate: {
+                        path: 'rol',
+                        options: {
+                            transform: transformarDatosPopulateRol
+                        }
+                    }
+                })
+                .populate({
+                    path: 'ultimoEnModificar',
+                    options: {
+                        transform: transformarDatosPopulatedUsuario
+                    },
+                    populate: {
+                        path: 'rol',
+                        options: {
+                            transform: transformarDatosPopulateRol
+                        }
+                    }
                 });
         }
         else {
-            const params = filtrarQueryParams(queryParams, ['producto', 'sucursal']);
+            const params = filtrarQueryParams(queryParams, ['producto', 'sucursal', 'existencia', 'precio', 'creador', 'fechaCreacion', 'ultimoEnModificar', 'fechaUltimaModificacion']);
 
             stockProductos = await StockProductos.find(params)
                 .populate({
@@ -154,6 +177,30 @@ module.exports.obtenerResgistrosStock = async (req = request, res = response) =>
                     path: 'sucursal',
                     options: {
                         transform: transformarDatosPopulatedSucursal
+                    }
+                })
+                .populate({
+                    path: 'creador',
+                    options: {
+                        transform: transformarDatosPopulatedUsuario
+                    },
+                    populate: {
+                        path: 'rol',
+                        options: {
+                            transform: transformarDatosPopulateRol
+                        }
+                    }
+                })
+                .populate({
+                    path: 'ultimoEnModificar',
+                    options: {
+                        transform: transformarDatosPopulatedUsuario
+                    },
+                    populate: {
+                        path: 'rol',
+                        options: {
+                            transform: transformarDatosPopulateRol
+                        }
                     }
                 });
         }
@@ -246,6 +293,30 @@ module.exports.obtenerStockPorId = async (req = request, res = response) => {
                 path: 'sucursal',
                 options: {
                     transform: transformarDatosPopulatedSucursal
+                }
+            })
+            .populate({
+                path: 'creador',
+                options: {
+                    transform: transformarDatosPopulatedUsuario
+                },
+                populate: {
+                    path: 'rol',
+                    options: {
+                        transform: transformarDatosPopulateRol
+                    }
+                }
+            })
+            .populate({
+                path: 'ultimoEnModificar',
+                options: {
+                    transform: transformarDatosPopulatedUsuario
+                },
+                populate: {
+                    path: 'rol',
+                    options: {
+                        transform: transformarDatosPopulateRol
+                    }
                 }
             });
 
