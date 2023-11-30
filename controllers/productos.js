@@ -1,10 +1,11 @@
 const { request, response } = require('express');
-const { filtrarQueryParams, transformarDatosPopulatedTipoProducto, transformarDatosPopulatedProveedor } = require('../helpers/index.js');
+const { filtrarQueryParams, transformarDatosPopulatedTipoProducto, transformarDatosPopulatedProveedor, transformarDatosPopulatedUsuario, transformarDatosPopulateRol } = require('../helpers/index.js');
 const { Producto, TipoProducto, Proveedor } = require('../models/index.js');
 
 
 module.exports.crearProducto = async (req = request, res = response) => {
-    const { nombre, descripcion, tipoProducto, proveedor, precio, ventaPor } = req.body;
+    const { nombre, descripcion, tipoProducto, proveedor, ventaPor } = req.body;
+    const { uId } = req;
 
     try {
         const promises = [TipoProducto.findById(tipoProducto), Proveedor.findById(proveedor)];
@@ -18,7 +19,7 @@ module.exports.crearProducto = async (req = request, res = response) => {
             });
         }
 
-        const producto = new Producto({ nombre, descripcion, tipoProducto, proveedor, precio, ventaPor });
+        const producto = new Producto({ nombre, descripcion, tipoProducto, proveedor, ventaPor, creador: uId, fechaCreacion: Date.now(), ultimoEnModificar: uId, fechaUltimaModificacion: Date.now() });
 
         await producto.save();
 
@@ -38,8 +39,9 @@ module.exports.crearProducto = async (req = request, res = response) => {
 }
 
 module.exports.actualizarProducto = async (req = request, res = response) => {
-    const { nombre, descripcion, tipoProducto, proveedor, precio, ventaPor, activo } = req.body;
+    const { nombre, descripcion, tipoProducto, proveedor, ventaPor, activo } = req.body;
     const { id: productoId } = req.params;
+    const { uId } = req;
 
     try {
         const producto = await Producto.findById(productoId);
@@ -51,7 +53,7 @@ module.exports.actualizarProducto = async (req = request, res = response) => {
             });
         }
 
-        await producto.updateOne({ nombre, descripcion, tipoProducto, proveedor, precio, ventaPor, activo });
+        await producto.updateOne({ nombre, descripcion, tipoProducto, proveedor, ventaPor, activo, ultimoEnModificar: uId, fechaUltimaModificacion: Date.now() });
 
         res.status(200).json({
             ok: true,
@@ -72,7 +74,7 @@ module.exports.obtenerProductos = async (req = request, res = response) => {
     const queryParams = req.query;
 
     try {
-        const params = filtrarQueryParams(queryParams, ['nombre', 'tipoProducto', 'proveedor', 'precio', 'ventaPor', 'activo']);
+        const params = filtrarQueryParams(queryParams, ['nombre', 'tipoProducto', 'proveedor', 'ventaPor', 'activo', 'creador', 'fechaCreacion', 'ultimoEnModificar', 'fechaUltimaModificaion']);
 
         const productos = await Producto.find(params)
             .populate({
@@ -85,6 +87,30 @@ module.exports.obtenerProductos = async (req = request, res = response) => {
                 path: 'proveedor',
                 options: {
                     transform: transformarDatosPopulatedProveedor
+                }
+            })
+            .populate({
+                path: 'creador',
+                options: {
+                    transform: transformarDatosPopulatedUsuario
+                },
+                populate: {
+                    path: 'rol',
+                    options: {
+                        transform: transformarDatosPopulateRol
+                    }
+                }
+            })
+            .populate({
+                path: 'ultimoEnModificar',
+                options: {
+                    transform: transformarDatosPopulatedUsuario
+                },
+                populate: {
+                    path: 'rol',
+                    options: {
+                        transform: transformarDatosPopulateRol
+                    }
                 }
             });
 
@@ -125,6 +151,30 @@ module.exports.obtenerProducto = async (req = request, res = response) => {
                 path: 'proveedor',
                 options: {
                     transform: transformarDatosPopulatedProveedor
+                }
+            })
+            .populate({
+                path: 'creador',
+                options: {
+                    transform: transformarDatosPopulatedUsuario
+                },
+                populate: {
+                    path: 'rol',
+                    options: {
+                        transform: transformarDatosPopulateRol
+                    }
+                }
+            })
+            .populate({
+                path: 'ultimoEnModificar',
+                options: {
+                    transform: transformarDatosPopulatedUsuario
+                },
+                populate: {
+                    path: 'rol',
+                    options: {
+                        transform: transformarDatosPopulateRol
+                    }
                 }
             });
 
