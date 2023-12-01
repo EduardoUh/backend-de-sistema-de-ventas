@@ -1,5 +1,5 @@
 const { request, response } = require('express');
-const { isObjectIdOrHexString, startSession, Types } = require('mongoose');
+const { isObjectIdOrHexString, startSession} = require('mongoose');
 const { filtrarQueryParams, transformarDatosPopulatedSucursal, transformarDatosPopulatedUsuario, transformarDatosPopulateRol, transformarDatosPopulatedProducto, transformarDatosPopulatedCliente } = require('../helpers/index.js');
 const { Venta, Pago, Sucursal, Cliente, Producto, StockProductos } = require('../models/index.js');
 
