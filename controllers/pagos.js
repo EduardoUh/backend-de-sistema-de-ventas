@@ -5,7 +5,7 @@ const { Venta, Pago } = require('../models/index.js');
 
 
 module.exports.crearPago = async (req = request, res = response) => {
-    const { venta, pagoCon, cantidad, cambio } = req.body;
+    const { venta, pagoCon, cantidad, cambio, saldo } = req.body;
     const { uId, esAdministrador, esVendedor, sucursalUsuario } = req;
     let session = null;
     try {
@@ -50,9 +50,9 @@ module.exports.crearPago = async (req = request, res = response) => {
 
         session.startTransaction();
 
-        const pago = new Pago({ venta, creador: uId, fechaCreacion: Date.now(), pagoCon, cantidad, cambio, saldo: (ventaDb.saldo - cantidad) });
+        const pago = new Pago({ venta, creador: uId, fechaCreacion: Date.now(), pagoCon, cantidad, cambio, saldo });
 
-        ventaDb.saldo = ventaDb.saldo - cantidad;
+        ventaDb.saldo = saldo;
 
         if (ventaDb.saldo === 0) {
             ventaDb.saldada = true;

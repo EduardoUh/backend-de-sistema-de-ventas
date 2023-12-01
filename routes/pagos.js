@@ -27,8 +27,6 @@ const validadorIdParam = () => param('id')
     .exists().withMessage('El id de la venta es requerido')
     .isMongoId().withMessage('Id inválido');
 
-//venta pagoCon cantidad cambio saldo
-
 pagosRouter.post('/pagos',
     verificarToken,
     exponerDatosUsuario,
