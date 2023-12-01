@@ -9,6 +9,7 @@ const { stockProductoRouter } = require('./stockProductos.js');
 const { clientesRouter } = require('./clientes.js');
 const { ventasRouter } = require('./ventas.js');
 const { pagosRouter } = require('./pagos.js');
+const { comprasRouter } = require('./compras.js');
 
 module.exports = {
     authRouter,
@@ -21,5 +22,6 @@ module.exports = {
     stockProductoRouter,
     clientesRouter,
     ventasRouter,
-    pagosRouter
+    pagosRouter,
+    comprasRouter
 }
