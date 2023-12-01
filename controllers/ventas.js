@@ -1,5 +1,5 @@
 const { request, response } = require('express');
-const { isObjectIdOrHexString, startSession } = require('mongoose');
+const { isObjectIdOrHexString, startSession} = require('mongoose');
 const { filtrarQueryParams, transformarDatosPopulatedSucursal, transformarDatosPopulatedUsuario, transformarDatosPopulateRol, transformarDatosPopulatedProducto, transformarDatosPopulatedCliente } = require('../helpers/index.js');
 const { Venta, Pago, Sucursal, Cliente, Producto, StockProductos } = require('../models/index.js');
 
@@ -7,9 +7,11 @@ const { Venta, Pago, Sucursal, Cliente, Producto, StockProductos } = require('..
 module.exports.crearVenta = async (req = request, res = response) => {
     const { sucursal, cliente, articulos, total, pagoCon, pago, cambio, saldo } = req.body;
     const { uId, esAdministrador, esVendedor, sucursalUsuario } = req;
-    const session = await startSession();
+    let session = null;
 
     try {
+        session = await startSession();
+
         if (esAdministrador && sucursalUsuario !== sucursal || esVendedor && sucursalUsuario !== sucursal) {
             return res.status(401).json({
                 ok: false,
@@ -54,6 +56,8 @@ module.exports.crearVenta = async (req = request, res = response) => {
             });
         }
 
+        session.startTransaction();
+
         for (const stockProducto of stockProductos) {
             const articulo = articulos.find(articulo => articulo.producto === stockProducto.producto.toHexString());
             const articuloDb = articulosDb.find(articuloDb => articuloDb.id === stockProducto.producto.toHexString());
@@ -72,20 +76,16 @@ module.exports.crearVenta = async (req = request, res = response) => {
                 });
             }
 
-            stockProducto.existencia -= articulo.cantidad;
+            await stockProducto.updateOne({ $inc: { existencia: -(articulo.cantidad) } }).session(session);
         }
-
-        session.startTransaction();
 
         const nuevaVenta = new Venta({ sucursal, creador: uId, cliente, articulos, total, pagoCon, pago, cambio, saldo, saldada: pago === total ? true : false, fechaCreacion: Date.now() });
 
-        (await nuevaVenta.save({ session }));
+        await nuevaVenta.save({ session });
 
         const pagoARegistrar = new Pago({ venta: nuevaVenta.id, creador: uId, fechaCreacion: nuevaVenta.fechaCreacion, pagoCon, cantidad: pago, cambio, saldo });
 
-        (await pagoARegistrar.save({ session }));
-
-        await StockProductos.bulkSave(stockProductos, { session });
+        await pagoARegistrar.save({ session });
 
         await session.commitTransaction();
 

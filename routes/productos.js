@@ -24,10 +24,6 @@ const validadorIdBody = (id) => body(id)
     .exists().withMessage(`El ${id === 'proveedor' ? 'proveedor' : 'tipo de producto'} es requerido`)
     .isMongoId().withMessage(`El formato del ${id === 'proveedor' ? 'proveedor' : 'tipo de producto'} es inválido`);
 
-const validadorPrecio = () => body('precio')
-    .exists().withMessage('El precio es requerido')
-    .isFloat().withMessage('El precio debe ser númerico');
-
 const validadorVentaPor = () => body('ventaPor')
     .exists().withMessage('El campo venta por es requerido')
     .isString().withMessage('El campo venta por debe ser una cadena de texto')
@@ -59,7 +55,6 @@ productosRouter.post('/productos',
         validadorDescripcion(),
         validadorIdBody('tipoProducto'),
         validadorIdBody('proveedor'),
-        validadorPrecio(),
         validadorVentaPor()
     ],
     manejarResultados,
@@ -77,7 +72,6 @@ productosRouter.put('/productos/:id',
         validadorDescripcion(),
         validadorIdBody('tipoProducto'),
         validadorIdBody('proveedor'),
-        validadorPrecio(),
         validadorVentaPor(),
         validadorActivo()
     ],
@@ -88,7 +82,6 @@ productosRouter.put('/productos/:id',
 productosRouter.get('/productos',
     verificarToken,
     exponerDatosUsuario,
-    permitirSuperUsuariosYAdministradores,
     obtenerProductos
 );
 
