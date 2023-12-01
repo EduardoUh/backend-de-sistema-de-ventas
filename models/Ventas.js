@@ -45,7 +45,7 @@ const ventaSchema = new Schema({
         required: true
     },
     saldo: {
-        type: Number,
+        type: Schema.Types.Decimal128,
         required: true
     },
     saldada: {
@@ -61,6 +61,7 @@ const ventaSchema = new Schema({
 ventaSchema.method('toJSON', function () {
     const { __v, _id, ...object } = this.toObject();
     object.id = _id;
+    object.saldo = parseFloat(object.saldo);
     return object;
 });
 
