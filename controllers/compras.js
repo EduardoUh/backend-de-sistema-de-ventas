@@ -209,3 +209,69 @@ module.exports.obtenerCompras = async (req = request, res = response) => {
         });
     }
 }
+
+module.exports.obtenerCompra = async (req = request, res = response) => {
+    const { id: compraId } = req.params;
+    const { esAdministrador, sucursalUsuario } = req;
+
+    try {
+        const compra = await Compra.findById(compraId)
+            .populate({
+                path: 'sucursal',
+                options: {
+                    transform: transformarDatosPopulatedSucursal
+                }
+            })
+            .populate({
+                path: 'proveedor',
+                options: {
+                    transform: transformarDatosPopulatedProveedor
+                }
+            })
+            .populate({
+                path: 'creador',
+                options: {
+                    transform: transformarDatosPopulatedUsuario
+                },
+                populate: {
+                    path: 'rol',
+                    options: {
+                        transform: transformarDatosPopulateRol
+                    }
+                }
+            })
+            .populate({
+                path: 'articulos.producto',
+                options: {
+                    transform: transformarDatosPopulatedProducto
+                }
+            });
+
+        if (!compra) {
+            return res.status(404).json({
+                ok: false,
+                message: 'Compra inexistente'
+            });
+        }
+
+        if (esAdministrador && sucursalUsuario !== compra.sucursal.id.toHexString()) {
+            return res.status(401).json({
+                ok: false,
+                message: 'Sin acceso a ésa sucursal'
+            });
+        }
+
+        res.status(200).json({
+            ok: true,
+            compra
+        });
+
+    } catch (error) {
+        console.log(error);
+
+        res.status(500).json({
+            ok: false,
+            message: 'Algo salió mal al obtener la compra, intente de nuevo y si el fallo persiste contacte al administrador'
+        });
+    }
+}
