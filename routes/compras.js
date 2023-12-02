@@ -2,7 +2,7 @@ const express = require('express');
 const { body, param } = require('express-validator');
 const { isObjectIdOrHexString } = require('mongoose');
 const { verificarToken, exponerDatosUsuario, permitirSuperUsuariosYAdministradores, manejarResultados } = require('../middlewares/index.js');
-const { crearCompra } = require('../controllers/compras.js');
+const { crearCompra, obtenerCompras } = require('../controllers/compras.js');
 
 
 const comprasRouter = express.Router();
@@ -65,6 +65,13 @@ comprasRouter.post('/compras',
     ],
     manejarResultados,
     crearCompra
+);
+
+comprasRouter.get('/compras',
+    verificarToken,
+    exponerDatosUsuario,
+    permitirSuperUsuariosYAdministradores,
+    obtenerCompras
 );
 
 module.exports = {

@@ -103,3 +103,109 @@ module.exports.crearCompra = async (req = request, res = response) => {
         await session.endSession();
     }
 }
+
+module.exports.obtenerCompras = async (req = request, res = response) => {
+    const queryParams = req.query;
+    const { esAdministrador, sucursalUsuario } = req;
+
+    try {
+        if (esAdministrador && queryParams.sucursal && queryParams.sucursal !== sucursalUsuario) {
+            return res.status(401).json({
+                ok: false,
+                message: 'Sin acceso a ésa sucursal'
+            });
+        }
+
+        let compras = null;
+        const params = filtrarQueryParams(queryParams, ['sucursal', 'proveedor', 'creador', 'fechaCreacion']);
+
+        if (esAdministrador) {
+            params.sucursal = sucursalUsuario;
+
+            compras = await Compra.find(params)
+                .populate({
+                    path: 'sucursal',
+                    options: {
+                        transform: transformarDatosPopulatedSucursal
+                    }
+                })
+                .populate({
+                    path: 'proveedor',
+                    options: {
+                        transform: transformarDatosPopulatedProveedor
+                    }
+                })
+                .populate({
+                    path: 'creador',
+                    options: {
+                        transform: transformarDatosPopulatedUsuario
+                    },
+                    populate: {
+                        path: 'rol',
+                        options: {
+                            transform: transformarDatosPopulateRol
+                        }
+                    }
+                })
+                .populate({
+                    path: 'articulos.producto',
+                    options: {
+                        transform: transformarDatosPopulatedProducto
+                    }
+                });
+        }
+        else {
+            compras = await Compra.find(params)
+                .populate({
+                    path: 'sucursal',
+                    options: {
+                        transform: transformarDatosPopulatedSucursal
+                    }
+                })
+                .populate({
+                    path: 'proveedor',
+                    options: {
+                        transform: transformarDatosPopulatedProveedor
+                    }
+                })
+                .populate({
+                    path: 'creador',
+                    options: {
+                        transform: transformarDatosPopulatedUsuario
+                    },
+                    populate: {
+                        path: 'rol',
+                        options: {
+                            transform: transformarDatosPopulateRol
+                        }
+                    }
+                })
+                .populate({
+                    path: 'articulos.producto',
+                    options: {
+                        transform: transformarDatosPopulatedProducto
+                    }
+                });
+        }
+
+        if (compras.length === 0) {
+            return res.status(404).json({
+                ok: false,
+                message: 'No se encontraron registros'
+            });
+        }
+
+        res.status(200).json({
+            ok: true,
+            compras
+        });
+
+    } catch (error) {
+        console.log(error);
+
+        res.status(500).json({
+            ok: false,
+            message: 'Algo salió mal al obtener los registros, intente de nuevo y si el fallo persiste contacte al administrador'
+        });
+    }
+}
