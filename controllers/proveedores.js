@@ -1,4 +1,5 @@
 const { request, response } = require('express');
+const { startSession } = require('mongoose');
 const { filtrarQueryParams, transformarDatosPopulatedUsuario, transformarDatosPopulateRol } = require('../helpers/index.js');
 const { Proveedor } = require('../models/index.js');
 
@@ -6,6 +7,7 @@ const { Proveedor } = require('../models/index.js');
 module.exports.crearProveedor = async (req = request, res = response) => {
     const { nombre, direccion, numTelefono, email, rfc } = req.body;
     const { uId } = req;
+    let session = null;
 
     try {
         const proveedorYaExiste = await Proveedor.findOne().or([{ rfc }, { email }]).exec();
@@ -18,7 +20,12 @@ module.exports.crearProveedor = async (req = request, res = response) => {
         }
 
         const proveedor = new Proveedor({ nombre, direccion, numTelefono, email, rfc, creador: uId, fechaCreacion: Date.now(), ultimoEnModificar: uId, fechaUltimaModificacion: Date.now() });
-        await proveedor.save();
+
+        session = await startSession();
+
+        session.startTransaction();
+
+        await proveedor.save({ session });
 
         const proveedorCreado = await Proveedor.findById(proveedor.id)
             .populate({
@@ -44,7 +51,9 @@ module.exports.crearProveedor = async (req = request, res = response) => {
                         transform: transformarDatosPopulateRol
                     }
                 }
-            });
+            }).session(session);
+
+        await session.commitTransaction();
 
         res.status(201).json({
             ok: true,
@@ -53,12 +62,17 @@ module.exports.crearProveedor = async (req = request, res = response) => {
         });
 
     } catch (error) {
+        await session.abortTransaction();
+
         console.log(error);
 
         res.status(500).json({
             ok: false,
             message: 'Algo salió mal al crear el proveedor, intente de nuevo y si el fallo persiste contacte al administrador'
         });
+    }
+    finally {
+        await session.endSession();
     }
 }
 
