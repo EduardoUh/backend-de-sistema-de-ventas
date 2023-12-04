@@ -1,6 +1,6 @@
 const express = require('express');
 const { body, param } = require('express-validator');
-const { verificarToken, exponerDatosUsuario, permitirSuperUsuarios, revisarProveedorYaExiste, manejarResultados } = require('../middlewares/index.js');
+const { verificarToken, exponerDatosUsuario, permitirSuperUsuariosYAdministradores, revisarProveedorYaExiste, manejarResultados } = require('../middlewares/index.js');
 const { crearProveedor, actualizarProveedor, obtenerProveedores, obtenerProveedorPorId } = require('../controllers/proveedores.js');
 
 
@@ -49,7 +49,7 @@ const validadorId = () => param('id')
 proveedoresRouter.post('/proveedores',
     verificarToken,
     exponerDatosUsuario,
-    permitirSuperUsuarios,
+    permitirSuperUsuariosYAdministradores,
     [
         validadorNombre(),
         validadorDireccion(),
@@ -65,7 +65,7 @@ proveedoresRouter.post('/proveedores',
 proveedoresRouter.put('/proveedores/:id',
     verificarToken,
     exponerDatosUsuario,
-    permitirSuperUsuarios,
+    permitirSuperUsuariosYAdministradores,
     [
         validadorNombre(),
         validadorDireccion(),
@@ -88,7 +88,7 @@ proveedoresRouter.get('/proveedores',
 proveedoresRouter.get('/proveedores/:id',
     verificarToken,
     exponerDatosUsuario,
-    permitirSuperUsuarios,
+    permitirSuperUsuariosYAdministradores,
     [
         validadorId()
     ],

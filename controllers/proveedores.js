@@ -1,29 +1,59 @@
 const { request, response } = require('express');
-const { filtrarQueryParams } = require('../helpers/index.js');
+const { filtrarQueryParams, transformarDatosPopulatedUsuario, transformarDatosPopulateRol } = require('../helpers/index.js');
 const { Proveedor } = require('../models/index.js');
 
 
 module.exports.crearProveedor = async (req = request, res = response) => {
     const { nombre, direccion, numTelefono, email, rfc } = req.body;
+    const { uId } = req;
 
     try {
-        const proveedor = new Proveedor({ nombre, direccion, numTelefono, email, rfc });
+        const proveedorYaExiste = await Proveedor.findOne().or([{ rfc }, { email }]).exec();
+
+        if (proveedorYaExiste) {
+            return res.status(409).json({
+                ok: false,
+                message: 'Ya existe un proveedor registrado con ese rfc o email'
+            })
+        }
+
+        const proveedor = new Proveedor({ nombre, direccion, numTelefono, email, rfc, creador: uId, fechaCreacion: Date.now(), ultimoEnModificar: uId, fechaUltimaModificacion: Date.now() });
         await proveedor.save();
+
+        const proveedorCreado = await Proveedor.findById(proveedor.id)
+            .populate({
+                path: 'creador',
+                options: {
+                    transform: transformarDatosPopulatedUsuario
+                },
+                populate: {
+                    path: 'rol',
+                    options: {
+                        transform: transformarDatosPopulateRol
+                    }
+                }
+            })
+            .populate({
+                path: 'ultimoEnModificar',
+                options: {
+                    transform: transformarDatosPopulatedUsuario
+                },
+                populate: {
+                    path: 'rol',
+                    options: {
+                        transform: transformarDatosPopulateRol
+                    }
+                }
+            });
 
         res.status(201).json({
             ok: true,
-            message: `Proveedor ${nombre} creado con éxito`
+            message: `Proveedor ${nombre} creado con éxito`,
+            proveedorCreado
         });
 
     } catch (error) {
         console.log(error);
-
-        if (error.code === 11000) {
-            return res.status(409).json({
-                ok: false,
-                message: 'Ya existe un proveedor registrado con ese rfc o email'
-            });
-        }
 
         res.status(500).json({
             ok: false,
@@ -35,6 +65,7 @@ module.exports.crearProveedor = async (req = request, res = response) => {
 module.exports.actualizarProveedor = async (req = request, res = response) => {
     const { nombre, direccion, numTelefono, email, rfc } = req.body;
     const { id: proveedorId } = req.params;
+    const { uId } = req;
 
     try {
         const proveedor = await Proveedor.findById(proveedorId);
@@ -46,7 +77,7 @@ module.exports.actualizarProveedor = async (req = request, res = response) => {
             });
         }
 
-        await proveedor.updateOne({ nombre, direccion, numTelefono, email, rfc });
+        await proveedor.updateOne({ nombre, direccion, numTelefono, email, rfc, ultimoEnModificar: uId, fechaUltimaModificacion: Date.now() });
 
         res.status(200).json({
             ok: true,
@@ -74,9 +105,33 @@ module.exports.obtenerProveedores = async (req = request, res = response) => {
     const queryParams = req.query;
 
     try {
-        const params = filtrarQueryParams(queryParams, ['nombre', 'direccion', 'numTelefono', 'email', 'rfc', 'activo']);
+        const params = filtrarQueryParams(queryParams, ['nombre', 'direccion', 'numTelefono', 'email', 'rfc', 'activo', 'creador', 'ultimoEnModificar', 'fechaCreacion', 'fechaUltimaModificacion']);
 
-        const proveedores = await Proveedor.find(params);
+        const proveedores = await Proveedor.find(params)
+            .populate({
+                path: 'creador',
+                options: {
+                    transform: transformarDatosPopulatedUsuario
+                },
+                populate: {
+                    path: 'rol',
+                    options: {
+                        transform: transformarDatosPopulateRol
+                    }
+                }
+            })
+            .populate({
+                path: 'ultimoEnModificar',
+                options: {
+                    transform: transformarDatosPopulatedUsuario
+                },
+                populate: {
+                    path: 'rol',
+                    options: {
+                        transform: transformarDatosPopulateRol
+                    }
+                }
+            });
 
         if (proveedores.length === 0) {
             return res.status(404).json({
@@ -104,7 +159,31 @@ module.exports.obtenerProveedorPorId = async (req = request, res = response) => 
     const { id: proveedorId } = req.params;
 
     try {
-        const proveedor = await Proveedor.findById(proveedorId);
+        const proveedor = await Proveedor.findById(proveedorId)
+            .populate({
+                path: 'creador',
+                options: {
+                    transform: transformarDatosPopulatedUsuario
+                },
+                populate: {
+                    path: 'rol',
+                    options: {
+                        transform: transformarDatosPopulateRol
+                    }
+                }
+            })
+            .populate({
+                path: 'ultimoEnModificar',
+                options: {
+                    transform: transformarDatosPopulatedUsuario
+                },
+                populate: {
+                    path: 'rol',
+                    options: {
+                        transform: transformarDatosPopulateRol
+                    }
+                }
+            });
 
         if (!proveedor) {
             return res.status(404).json({
