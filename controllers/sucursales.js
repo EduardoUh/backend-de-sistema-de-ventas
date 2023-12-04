@@ -1,21 +1,60 @@
 const { request, response } = require('express');
+const { startSession } = require('mongoose');
 const { Sucursal } = require('../models/index.js');
-const { transformarDatosPopulateRol, filtrarQueryParams } = require('../helpers/index.js');
+const { transformarDatosPopulateRol, filtrarQueryParams, transformarDatosPopulatedUsuario } = require('../helpers/index.js');
 
 
 module.exports.crearSucursal = async (req = request, res = response) => {
     const { nombre, ciudad, direccion, email } = req.body;
-    const { uId: creador } = req;
+    const { uId } = req;
+    let session = null;
+
     try {
-        const sucursal = new Sucursal({ nombre, ciudad, direccion, email, activa: true, creador });
-        await sucursal.save();
+        const sucursal = new Sucursal({ nombre, ciudad, direccion, email, activa: true, creador: uId, fechaCreacion: Date.now(), ultimoEnModificar: uId, fechaUltimaModificacion: Date.now() });
+
+        session = await startSession();
+
+        session.startTransaction();
+
+        await sucursal.save({ session });
+
+        const sucursalCreada = await Sucursal.findById(sucursal.id)
+            .populate({
+                path: 'creador',
+                options: {
+                    transform: transformarDatosPopulatedUsuario
+                },
+                populate: {
+                    path: 'rol',
+                    options: {
+                        transform: transformarDatosPopulateRol
+                    }
+                }
+            })
+            .populate({
+                path: 'ultimoEnModificar',
+                options: {
+                    transform: transformarDatosPopulatedUsuario
+                },
+                populate: {
+                    path: 'rol',
+                    options: {
+                        transform: transformarDatosPopulateRol
+                    }
+                }
+            }).session(session);
+
+        await session.commitTransaction();
 
         res.status(201).json({
             ok: true,
-            message: `Sucursal ${nombre} creada con exito`
+            message: `Sucursal ${nombre} creada con exito`,
+            sucursal: sucursalCreada
         });
 
     } catch (error) {
+        await session.abortTransaction();
+
         console.log(error);
 
         res.status(500).json({
@@ -23,14 +62,20 @@ module.exports.crearSucursal = async (req = request, res = response) => {
             message: 'Algo salió mal al intentar crear una nueva sucursal, intente de nuevo y si el fallo persiste contacte al administrador'
         });
     }
+    finally {
+        await session.endSession();
+    }
 }
 
 module.exports.actualizarSucursal = async (req = request, res = response) => {
     const { nombre, ciudad, direccion, email, activa } = req.body;
-    const { id } = req.params;
+    const { id: sucursalId } = req.params;
+    const { uId, esAdministrador, sucursalUsuario } = req;
+    let session = null;
 
     try {
-        const sucursal = await Sucursal.findById(id);
+
+        const sucursal = await Sucursal.findById(sucursalId);
 
         if (!sucursal) {
             return res.status(404).json({
@@ -39,14 +84,49 @@ module.exports.actualizarSucursal = async (req = request, res = response) => {
             });
         }
 
-        await sucursal.updateOne({ nombre, ciudad, direccion, email, activa });
+        session = await startSession();
+
+        session.startTransaction();
+
+        await sucursal.updateOne({ nombre, ciudad, direccion, email, activa, ultimoEnModificar: uId, fechaUltimaModificacion: Date.now() }).session(session);
+
+        const sucursalActualizada = await Sucursal.findById(sucursal.id)
+            .populate({
+                path: 'creador',
+                options: {
+                    transform: transformarDatosPopulatedUsuario
+                },
+                populate: {
+                    path: 'rol',
+                    options: {
+                        transform: transformarDatosPopulateRol
+                    }
+                }
+            })
+            .populate({
+                path: 'ultimoEnModificar',
+                options: {
+                    transform: transformarDatosPopulatedUsuario
+                },
+                populate: {
+                    path: 'rol',
+                    options: {
+                        transform: transformarDatosPopulateRol
+                    }
+                }
+            }).session(session);
+
+        await session.commitTransaction();
 
         res.status(200).json({
             ok: true,
-            message: `La sucursal ${nombre} ha sido actualizada exitosamente`
+            message: `La sucursal ${nombre} ha sido actualizada exitosamente`,
+            sucursal: sucursalActualizada
         });
 
     } catch (error) {
+        await session.abortTransaction();
+
         console.log(error);
 
         res.status(500).json({
@@ -54,16 +134,33 @@ module.exports.actualizarSucursal = async (req = request, res = response) => {
             message: 'Algo salió mal al intentar actualizar la sucursal, intente de nuevo y si el fallo persiste contacte al administrador'
         });
     }
+    finally {
+        await session.endSession();
+    }
 }
 
 module.exports.obtenerSucursalPorId = async (req = request, res = response) => {
-    const { id } = req.params;
+    const { id: sucursalId } = req.params;
 
     try {
-        const sucursal = await Sucursal.findById(id)
+        const sucursal = await Sucursal.findById(sucursalId)
             .populate({
                 path: 'creador',
-                select: 'nombres apellidoPaterno apellidoMaterno rol email numTelefono -_id',
+                options: {
+                    transform: transformarDatosPopulatedUsuario
+                },
+                populate: {
+                    path: 'rol',
+                    options: {
+                        transform: transformarDatosPopulateRol
+                    }
+                }
+            })
+            .populate({
+                path: 'ultimoEnModificar',
+                options: {
+                    transform: transformarDatosPopulatedUsuario
+                },
                 populate: {
                     path: 'rol',
                     options: {
@@ -96,21 +193,68 @@ module.exports.obtenerSucursalPorId = async (req = request, res = response) => {
 
 module.exports.obtenerSucursales = async (req = request, res = response) => {
     const queryParams = req.query;
+    const { esAdministrador, sucursalUsuario } = req;
 
     try {
-        const params = filtrarQueryParams(queryParams, ['nombre', 'ciudad', 'direccion', 'email', 'activa', 'creador']);
+        const params = filtrarQueryParams(queryParams, ['nombre', 'ciudad', 'direccion', 'email', 'activa', 'creador', 'fechaCreacion', 'ultimoEnModificar', 'fechaUltimaModificacion']);
 
-        const sucursales = await Sucursal.find(params)
-            .populate({
-                path: 'creador',
-                select: 'nombres apellidoPaterno apellidoMaterno rol email numTelefono -_id',
-                populate: {
-                    path: 'rol',
+        let sucursales = null;
+
+        if (esAdministrador) {
+            params._id = sucursalUsuario;
+            sucursales = await Sucursal.find(params)
+                .populate({
+                    path: 'creador',
                     options: {
-                        transform: transformarDatosPopulateRol
+                        transform: transformarDatosPopulatedUsuario
+                    },
+                    populate: {
+                        path: 'rol',
+                        options: {
+                            transform: transformarDatosPopulateRol
+                        }
                     }
-                }
-            });
+                })
+                .populate({
+                    path: 'ultimoEnModificar',
+                    options: {
+                        transform: transformarDatosPopulatedUsuario
+                    },
+                    populate: {
+                        path: 'rol',
+                        options: {
+                            transform: transformarDatosPopulateRol
+                        }
+                    }
+                });
+        }
+        else {
+            sucursales = await Sucursal.find(params)
+                .populate({
+                    path: 'creador',
+                    options: {
+                        transform: transformarDatosPopulatedUsuario
+                    },
+                    populate: {
+                        path: 'rol',
+                        options: {
+                            transform: transformarDatosPopulateRol
+                        }
+                    }
+                })
+                .populate({
+                    path: 'ultimoEnModificar',
+                    options: {
+                        transform: transformarDatosPopulatedUsuario
+                    },
+                    populate: {
+                        path: 'rol',
+                        options: {
+                            transform: transformarDatosPopulateRol
+                        }
+                    }
+                });
+        }
 
         if (sucursales.length === 0) {
             return res.status(404).json({
