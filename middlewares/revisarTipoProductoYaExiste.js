@@ -3,15 +3,15 @@ const { TipoProducto } = require('../models/index.js');
 
 
 module.exports.revisarTipoProductoYaExiste = async (req = request, res = response, next) => {
-    const { tipoProducto, descripcion } = req.body;
+    const { tipoProducto } = req.body;
 
     try {
-        const tipoProductoEncontrado = await TipoProducto.findOne({ tipoProducto, descripcion });
+        const tipoProductoEncontrado = await TipoProducto.findOne({ tipoProducto });
 
         if (tipoProductoEncontrado) {
             return res.status(409).json({
                 ok: false,
-                message: 'Ya existe un tipo de producto con esos datos'
+                message: 'Ya existe ése tipo de producto'
             });
         }
 

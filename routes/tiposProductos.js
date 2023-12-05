@@ -25,10 +25,7 @@ const validadorActivo = () => body('activo')
     .isBoolean({ strict: true }).withMessage('El estatus debe ser true o false');
 
 const validadorId = () => param('id')
-    .exists().withMessage('El id es requerido')
-    .isString().withMessage('El id debe ser una cadena de texto')
-    .trim()
-    .isLength({ min: 24, max: 24 }).withMessage('Id inválido');
+    .isMongoId().withMessage('Id inválido');
 
 tiposProductosRouter.post('/tiposProductos',
     verificarToken,

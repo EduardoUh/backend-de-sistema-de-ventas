@@ -1,44 +1,89 @@
 const { request, response } = require('express');
-const { filtrarQueryParams } = require('../helpers/index.js');
+const { startSession } = require('mongoose');
+const { filtrarQueryParams, transformarDatosPopulatedUsuario, transformarDatosPopulateRol } = require('../helpers/index.js');
 const { TipoProducto } = require('../models/index.js');
 
 
 module.exports.crearTipoProducto = async (req = request, res = response) => {
     const { tipoProducto, descripcion } = req.body;
+    const { uId } = req;
+    let session = null;
 
     try {
-        const newTipoProducto = new TipoProducto({ tipoProducto, descripcion });
+        session = await startSession();
 
-        await newTipoProducto.save();
+        const newTipoProducto = new TipoProducto({ tipoProducto, descripcion, creador: uId, fechaCreacion: Date.now(), ultimoEnModificar: uId, fechaUltimaModificacion: Date.now() });
+
+        session.startTransaction();
+
+        await newTipoProducto.save({ session });
+
+        const tipoProductoCreado = await TipoProducto.findById(newTipoProducto.id)
+            .populate({
+                path: 'creador',
+                options: {
+                    transform: transformarDatosPopulatedUsuario
+                },
+                populate: {
+                    path: 'rol',
+                    options: {
+                        transform: transformarDatosPopulateRol
+                    }
+                }
+            })
+            .populate({
+                path: 'ultimoEnModificar',
+                options: {
+                    transform: transformarDatosPopulatedUsuario
+                },
+                populate: {
+                    path: 'rol',
+                    options: {
+                        transform: transformarDatosPopulateRol
+                    }
+                }
+            }).session(session);
+
+        await session.commitTransaction();
 
         res.status(201).json({
             ok: true,
-            message: `Tipo de producto ${tipoProducto} creado con éxtito`
+            message: `Tipo de producto ${tipoProducto} creado con éxtito`,
+            tipoProducto: tipoProductoCreado
         });
 
     } catch (error) {
-        console.log(error);
-
-        if (error.code === 11000) {
-            return res.status(409).json({
-                ok: false,
-                message: 'Ya existe ése tipo de producto'
-            });
+        if (session?.transaction?.isActive) {
+            await session.abortTransaction();
         }
+
+        console.log(error);
 
         res.status(500).json({
             ok: false,
             message: 'Algo salió mal al crear el tipo de producto, intente de nuevo y si el fallo persiste contacte al administrador'
         });
     }
+    finally {
+        if (session) {
+            await session.endSession();
+        }
+    }
 }
 
 module.exports.actualizarTipoProducto = async (req = request, res = response) => {
     const { tipoProducto, descripcion, activo } = req.body;
     const { id: tipoProductoId } = req.params;
+    const { uId } = req;
+    let session = null;
 
     try {
-        const tipoProductoEncontrado = await TipoProducto.findById(tipoProductoId);
+        session = await startSession();
+
+        const [tipoProductoEncontrado, tipoProductoPorTipoProducto] = await Promise.all([
+            TipoProducto.findById(tipoProductoId),
+            TipoProducto.findOne({ tipoProducto })
+        ]);
 
         if (!tipoProductoEncontrado) {
             return res.status(404).json({
@@ -47,27 +92,67 @@ module.exports.actualizarTipoProducto = async (req = request, res = response) =>
             });
         }
 
-        await tipoProductoEncontrado.updateOne({ tipoProducto, descripcion, activo });
-
-        res.status(200).json({
-            ok: true,
-            message: `Tipo de producto ${tipoProducto} actualizado correctamente`
-        });
-
-    } catch (error) {
-        console.log(error);
-
-        if (error.code === 11000) {
+        if (tipoProductoPorTipoProducto && tipoProductoEncontrado.id !== tipoProductoPorTipoProducto.id) {
             return res.status(409).json({
                 ok: false,
                 message: 'Ya existe ése tipo de producto'
             });
         }
 
+        session.startTransaction();
+
+        await tipoProductoEncontrado.updateOne({ tipoProducto, descripcion, activo, ultimoEnModificar: uId, fechaUltimaModificacion: Date.now() }).session(session);
+
+        const tipoProductoActualizado = await TipoProducto.findById(tipoProductoEncontrado.id)
+            .populate({
+                path: 'creador',
+                options: {
+                    transform: transformarDatosPopulatedUsuario
+                },
+                populate: {
+                    path: 'rol',
+                    options: {
+                        transform: transformarDatosPopulateRol
+                    }
+                }
+            })
+            .populate({
+                path: 'ultimoEnModificar',
+                options: {
+                    transform: transformarDatosPopulatedUsuario
+                },
+                populate: {
+                    path: 'rol',
+                    options: {
+                        transform: transformarDatosPopulateRol
+                    }
+                }
+            }).session(session);
+
+        await session.commitTransaction();
+
+        res.status(200).json({
+            ok: true,
+            message: `Tipo de producto ${tipoProducto} actualizado correctamente`,
+            tipoProducto: tipoProductoActualizado
+        });
+
+    } catch (error) {
+        if (session?.transaction?.isActive) {
+            await session.abortTransaction();
+        }
+
+        console.log(error);
+
         res.status(500).json({
             ok: false,
             message: 'Algo salió mal al actualizar el tipo de producto, intente de nuevo y si el fallo persiste contacte al administrador'
         });
+    }
+    finally {
+        if (session) {
+            await session.endSession();
+        }
     }
 }
 

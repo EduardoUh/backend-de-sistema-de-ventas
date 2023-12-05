@@ -16,6 +16,24 @@ const tiposProductosSchema = new Schema({
     activo: {
         type: Boolean,
         default: true
+    },
+    creador: {
+        type: Schema.Types.ObjectId,
+        ref: 'Usuarios',
+        required: true
+    },
+    fechaCreacion: {
+        type: Number,
+        required: true
+    },
+    ultimoEnModificar: {
+        type: Schema.Types.ObjectId,
+        ref: 'Usuarios',
+        required: true
+    },
+    fechaUltimaModificacion: {
+        type: Number,
+        required: true
     }
 });
 
