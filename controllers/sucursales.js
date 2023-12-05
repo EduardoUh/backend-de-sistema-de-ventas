@@ -44,10 +44,6 @@ module.exports.crearSucursal = async (req = request, res = response) => {
                 }
             }).session(session);
 
-        console.log(session?.transaction?.isActive);
-
-        throw new Error('Oops');
-
         await session.commitTransaction();
 
         res.status(201).json({
@@ -78,7 +74,7 @@ module.exports.crearSucursal = async (req = request, res = response) => {
 module.exports.actualizarSucursal = async (req = request, res = response) => {
     const { nombre, ciudad, direccion, email, activa } = req.body;
     const { id: sucursalId } = req.params;
-    const { uId, esAdministrador, sucursalUsuario } = req;
+    const { uId } = req;
     let session = null;
 
     try {
