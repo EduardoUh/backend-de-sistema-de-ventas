@@ -10,9 +10,9 @@ module.exports.crearSucursal = async (req = request, res = response) => {
     let session = null;
 
     try {
-        const sucursal = new Sucursal({ nombre, ciudad, direccion, email, activa: true, creador: uId, fechaCreacion: Date.now(), ultimoEnModificar: uId, fechaUltimaModificacion: Date.now() });
-
         session = await startSession();
+
+        const sucursal = new Sucursal({ nombre, ciudad, direccion, email, activa: true, creador: uId, fechaCreacion: Date.now(), ultimoEnModificar: uId, fechaUltimaModificacion: Date.now() });
 
         session.startTransaction();
 
@@ -53,7 +53,9 @@ module.exports.crearSucursal = async (req = request, res = response) => {
         });
 
     } catch (error) {
-        await session.abortTransaction();
+        if (session.transaction.isActive) {
+            await session.abortTransaction();
+        }
 
         console.log(error);
 
@@ -63,7 +65,9 @@ module.exports.crearSucursal = async (req = request, res = response) => {
         });
     }
     finally {
-        await session.endSession();
+        if (session) {
+            await session.endSession();
+        }
     }
 }
 
@@ -74,6 +78,7 @@ module.exports.actualizarSucursal = async (req = request, res = response) => {
     let session = null;
 
     try {
+        session = await startSession();
 
         const sucursal = await Sucursal.findById(sucursalId);
 
@@ -83,8 +88,6 @@ module.exports.actualizarSucursal = async (req = request, res = response) => {
                 message: 'Sucursal no encontrada'
             });
         }
-
-        session = await startSession();
 
         session.startTransaction();
 
@@ -125,7 +128,9 @@ module.exports.actualizarSucursal = async (req = request, res = response) => {
         });
 
     } catch (error) {
-        await session.abortTransaction();
+        if (session.transaction.isActive) {
+            await session.abortTransaction();
+        }
 
         console.log(error);
 
@@ -135,7 +140,9 @@ module.exports.actualizarSucursal = async (req = request, res = response) => {
         });
     }
     finally {
-        await session.endSession();
+        if (session) {
+            await session.endSession();
+        }
     }
 }
 
