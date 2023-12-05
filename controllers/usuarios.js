@@ -116,7 +116,7 @@ module.exports.crearUsuario = async (req = request, res = response) => {
         });
 
     } catch (error) {
-        if (session.transaction.isActive) {
+        if (session?.transaction?.isActive) {
             await session.abortTransaction();
         }
 
@@ -125,7 +125,7 @@ module.exports.crearUsuario = async (req = request, res = response) => {
         res.status(500).json({
             ok: false,
             message: 'Algo salió mal al crear el usuario, intente de nuevo y si el fallo persiste contacte al administrador'
-        })
+        });
     }
     finally {
         if (session) {
@@ -302,7 +302,7 @@ module.exports.actualizarOtrosPerfiles = async (req = request, res = response) =
         });
 
     } catch (error) {
-        if (session.transaction.isActive) {
+        if (session?.transaction?.isActive) {
             await session.abortTransaction();
         }
 
@@ -320,26 +320,118 @@ module.exports.actualizarOtrosPerfiles = async (req = request, res = response) =
     }
 }
 
-module.exports.superUsuarioObtenerUsuarios = async (req = request, res = response) => {
-    const { query } = req;
+module.exports.obtenerUsuarios = async (req = request, res = response) => {
+    const { esAdministrador, sucursalUsuario } = req;
+    const queryParameters = req.query;
 
     try {
-        const queryParameters = filtrarQueryParams(query, ['nombres', 'apellidoPaterno', 'apellidoMaterno', 'rfc', 'email', 'rol', 'sucursal', 'direccion', 'numTelefono']);
+        let usuarios = null;
+        const params = filtrarQueryParams(queryParameters, [
+            'nombres',
+            'apellidoPaterno',
+            'apellidoMaterno',
+            'rfc',
+            'rol',
+            'sucursal',
+            'email',
+            'direccion',
+            'numTelefono',
+            'activo',
+            'creador',
+            'fechaCreacion',
+            'ultimoEnModificar',
+            'fechaUltimaModificacion'
+        ]);
 
-        const usuarios = await Usuario.find(queryParameters)
-            .select('-password')
-            .populate({
-                path: 'rol',
-                options: {
-                    transform: transformarDatosPopulateRol
-                }
-            })
-            .populate({
-                path: 'sucursal',
-                options: {
-                    transform: transformarDatosPopulatedSucursal
-                }
+        if (esAdministrador && params?.sucursal && params?.sucursal !== sucursalUsuario) {
+            return res.status(401).json({
+                ok: false,
+                message: 'Sin acceso a ésa sucursal'
             });
+        }
+
+        if (esAdministrador) {
+            params.sucursal = sucursalUsuario;
+
+            usuarios = await Usuario.find(params)
+                .select('-password')
+                .populate({
+                    path: 'rol',
+                    options: {
+                        transform: transformarDatosPopulateRol
+                    }
+                })
+                .populate({
+                    path: 'sucursal',
+                    options: {
+                        transform: transformarDatosPopulatedSucursal
+                    }
+                })
+                .populate({
+                    path: 'creador',
+                    options: {
+                        transform: transformarDatosPopulatedUsuario
+                    },
+                    populate: {
+                        path: 'rol',
+                        options: {
+                            transform: transformarDatosPopulateRol
+                        }
+                    }
+                })
+                .populate({
+                    path: 'ultimoEnModificar',
+                    options: {
+                        transform: transformarDatosPopulatedUsuario
+                    },
+                    populate: {
+                        path: 'rol',
+                        options: {
+                            transform: transformarDatosPopulateRol
+                        }
+                    }
+                });
+        }
+        else {
+            usuarios = await Usuario.find(params)
+                .select('-password')
+                .populate({
+                    path: 'rol',
+                    options: {
+                        transform: transformarDatosPopulateRol
+                    }
+                })
+                .populate({
+                    path: 'sucursal',
+                    options: {
+                        transform: transformarDatosPopulatedSucursal
+                    }
+                })
+                .populate({
+                    path: 'creador',
+                    options: {
+                        transform: transformarDatosPopulatedUsuario
+                    },
+                    populate: {
+                        path: 'rol',
+                        options: {
+                            transform: transformarDatosPopulateRol
+                        }
+                    }
+                })
+                .populate({
+                    path: 'ultimoEnModificar',
+                    options: {
+                        transform: transformarDatosPopulatedUsuario
+                    },
+                    populate: {
+                        path: 'rol',
+                        options: {
+                            transform: transformarDatosPopulateRol
+                        }
+                    }
+                });
+        }
 
         if (usuarios.length === 0) {
             return res.status(404).json({
@@ -358,54 +450,7 @@ module.exports.superUsuarioObtenerUsuarios = async (req = request, res = respons
 
         res.status(500).json({
             ok: false,
-            message: 'Algo salió mal al obtner los usuarios, intente de nuevo y si el fallo persiste contacte al administrador'
-        });
-    }
-}
-
-module.exports.administradorObtenerUsuarios = async (req = request, res = response) => {
-    const { query, sucursalUsuario } = req;
-
-    try {
-        const queryParameters = filtrarQueryParams(query, ['nombres', 'apellidoPaterno', 'apellidoMaterno', 'rfc', 'email', 'direccion', 'numTelefono']);
-
-        queryParameters.sucursal = sucursalUsuario;
-
-        const usuarios = await Usuario.find(queryParameters)
-            .select('-password')
-            .populate({
-                path: 'rol',
-                options: {
-                    transform: transformarDatosPopulateRol
-                }
-            })
-            .populate({
-                path: 'sucursal',
-                options: {
-                    transform: transformarDatosPopulatedSucursal
-                }
-            });
-
-        const filteredUsers = usuarios.filter(usuario => usuario.rol === 'VENDEDOR');
-
-        if (usuarios.length === 0 || filteredUsers.length === 0) {
-            return res.status(404).json({
-                ok: false,
-                message: 'No se encontraron registros'
-            });
-        }
-
-        res.status(200).json({
-            ok: true,
-            usuarios: filteredUsers
-        });
-
-    } catch (error) {
-        console.log(error);
-
-        res.status(500).json({
-            ok: false,
-            message: 'Algo salió mal al obtener los vendedores, intente de nuevo y si el fallo persiste contacte al administrador'
+            message: 'Algo salió mal al obtener los usuarios, intente de nuevo y si el fallo persiste contacte al administrador'
         });
     }
 }
@@ -431,6 +476,30 @@ module.exports.obtenerUsuarioPorId = async (req = request, res = response) => {
                     options: {
                         transform: transformarDatosPopulatedSucursal
                     }
+                })
+                .populate({
+                    path: 'creador',
+                    options: {
+                        transform: transformarDatosPopulatedUsuario
+                    },
+                    populate: {
+                        path: 'rol',
+                        options: {
+                            transform: transformarDatosPopulateRol
+                        }
+                    }
+                })
+                .populate({
+                    path: 'ultimoEnModificar',
+                    options: {
+                        transform: transformarDatosPopulatedUsuario
+                    },
+                    populate: {
+                        path: 'rol',
+                        options: {
+                            transform: transformarDatosPopulateRol
+                        }
+                    }
                 });
         }
         else {
@@ -447,6 +516,30 @@ module.exports.obtenerUsuarioPorId = async (req = request, res = response) => {
                     options: {
                         transform: transformarDatosPopulatedSucursal
                     }
+                })
+                .populate({
+                    path: 'creador',
+                    options: {
+                        transform: transformarDatosPopulatedUsuario
+                    },
+                    populate: {
+                        path: 'rol',
+                        options: {
+                            transform: transformarDatosPopulateRol
+                        }
+                    }
+                })
+                .populate({
+                    path: 'ultimoEnModificar',
+                    options: {
+                        transform: transformarDatosPopulatedUsuario
+                    },
+                    populate: {
+                        path: 'rol',
+                        options: {
+                            transform: transformarDatosPopulateRol
+                        }
+                    }
                 });
         }
 
@@ -454,13 +547,6 @@ module.exports.obtenerUsuarioPorId = async (req = request, res = response) => {
             return res.status(404).json({
                 ok: false,
                 message: 'Usuario no encontrado'
-            });
-        }
-
-        if (esAdministrador && usuario.rol !== 'VENDEDOR' && uId !== usuario.id) {
-            return res.status(401).json({
-                ok: false,
-                message: 'Sin acceso a éste usuario'
             });
         }
 
