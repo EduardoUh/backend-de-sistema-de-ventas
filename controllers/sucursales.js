@@ -44,6 +44,10 @@ module.exports.crearSucursal = async (req = request, res = response) => {
                 }
             }).session(session);
 
+        console.log(session?.transaction?.isActive);
+
+        throw new Error('Oops');
+
         await session.commitTransaction();
 
         res.status(201).json({
@@ -53,7 +57,7 @@ module.exports.crearSucursal = async (req = request, res = response) => {
         });
 
     } catch (error) {
-        if (session.transaction.isActive) {
+        if (session?.transaction?.isActive) {
             await session.abortTransaction();
         }
 
@@ -128,7 +132,7 @@ module.exports.actualizarSucursal = async (req = request, res = response) => {
         });
 
     } catch (error) {
-        if (session.transaction.isActive) {
+        if (session?.transaction?.isActive) {
             await session.abortTransaction();
         }
 
