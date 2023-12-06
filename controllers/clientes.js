@@ -10,9 +10,9 @@ module.exports.crearCliente = async (req = request, res = response) => {
     let session = null;
 
     try {
-        const cliente = new Cliente({ nombres, apellidoPaterno, apellidoMaterno, rfc, email, numTelefono, direccion, creador: usuarioId, fechaCreacion: Date.now(), ultimoEnModificar: usuarioId, fechaUltimaModificacion: Date.now() });
-
         session = await startSession();
+
+        const cliente = new Cliente({ nombres, apellidoPaterno, apellidoMaterno, rfc, email, numTelefono, direccion, creador: usuarioId, fechaCreacion: Date.now(), ultimoEnModificar: usuarioId, fechaUltimaModificacion: Date.now() });
 
         session.startTransaction();
 
@@ -49,11 +49,14 @@ module.exports.crearCliente = async (req = request, res = response) => {
         res.status(201).json({
             ok: true,
             message: `Cliente ${nombres} creado con éxito`,
-            clienteCreado
+            cliente: clienteCreado
         });
 
     } catch (error) {
-        await session.abortTransaction();
+        if (session?.transaction?.isActive) {
+            await session.abortTransaction();
+        }
+
         console.log(error);
 
         res.status(500).json({
@@ -62,7 +65,9 @@ module.exports.crearCliente = async (req = request, res = response) => {
         });
     }
     finally {
-        await session.endSession();
+        if (session) {
+            await session.endSession();
+        }
     }
 }
 
@@ -70,8 +75,11 @@ module.exports.actualizarCliente = async (req = request, res = response) => {
     const { nombres, apellidoPaterno, apellidoMaterno, rfc, email, numTelefono, direccion, activo } = req.body;
     const { id: clienteId } = req.params;
     const { uId: usuarioId } = req;
+    let session = null;
 
     try {
+        session = await startSession();
+
         const [clientById, clientByRfc, clientByEmail] = await Promise.all([Cliente.findById(clienteId), Cliente.findOne({ rfc }), Cliente.findOne({ email })]);
 
         if (clientById === null) {
@@ -81,34 +89,67 @@ module.exports.actualizarCliente = async (req = request, res = response) => {
             });
         }
 
-        if (clientByRfc !== null && clientById.id !== clientByRfc.id) {
+        if (clientByRfc !== null && clientById.id !== clientByRfc.id || clientByEmail !== null && clientById.id !== clientByEmail.id) {
             return res.status(409).json({
                 ok: false,
                 message: 'Ya existe un cliente con ése email o rfc'
             });
         }
 
-        if (clientByEmail !== null && clientById.id !== clientByEmail.id) {
-            return res.status(409).json({
-                ok: false,
-                message: 'Ya existe un cliente con ése email o rfc'
-            });
-        }
+        session.startTransaction();
 
-        await clientById.updateOne({ nombres, apellidoPaterno, apellidoMaterno, rfc, email, numTelefono, direccion, activo, ultimoEnModificar: usuarioId, fechaUltimaModificacion: Date.now() });
+        await clientById.updateOne({ nombres, apellidoPaterno, apellidoMaterno, rfc, email, numTelefono, direccion, activo, ultimoEnModificar: usuarioId, fechaUltimaModificacion: Date.now() }).session(session);
+
+        const clienteActualizado = await Cliente.findById(clientById)
+            .populate({
+                path: 'creador',
+                options: {
+                    transform: transformarDatosPopulatedUsuario
+                },
+                populate: {
+                    path: 'rol',
+                    options: {
+                        transform: transformarDatosPopulateRol
+                    }
+                }
+            })
+            .populate({
+                path: 'ultimoEnModificar',
+                options: {
+                    transform: transformarDatosPopulatedUsuario
+                },
+                populate: {
+                    path: 'rol',
+                    options: {
+                        transform: transformarDatosPopulateRol
+                    }
+                }
+            }).session(session);
+
+        await session.commitTransaction();
 
         res.status(200).json({
             ok: true,
-            message: `Cliente ${nombres} actualizado con éxito`
+            message: `Cliente ${nombres} actualizado con éxito`,
+            cliente: clienteActualizado
         })
 
     } catch (error) {
+        if (session?.transaction?.isActive) {
+            await session.abortTransaction();
+        }
+
         console.log(error);
 
         res.status(500).json({
             ok: false,
             message: 'Algo salió mal al actualizar el cliente, intente de nuevo y si el fallo persiste contacte al administador'
         });
+    }
+    finally {
+        if (session) {
+            await session.endSession();
+        }
     }
 }
 
