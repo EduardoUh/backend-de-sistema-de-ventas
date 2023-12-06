@@ -1,5 +1,5 @@
 const { request, response } = require('express');
-const { Types } = require('mongoose');
+const { startSession } = require('mongoose');
 const { filtrarQueryParams, transformarDatosPopulatedProducto, transformarDatosPopulatedSucursal, transformarDatosPopulatedUsuario, transformarDatosPopulateRol } = require('../helpers/index.js');
 const { Producto, Sucursal, StockProductos } = require('../models/index.js');
 
@@ -7,8 +7,11 @@ const { Producto, Sucursal, StockProductos } = require('../models/index.js');
 module.exports.crearStockProducto = async (req = request, res = response) => {
     const { producto: productoId, sucursal: sucursalId, existencia, precio } = req.body;
     const { uId, esAdministrador, sucursalUsuario } = req;
+    let session = null;
 
     try {
+        session = await startSession();
+
         if (esAdministrador && sucursalUsuario !== sucursalId) {
             return res.status(401).json({
                 ok: false,
@@ -41,14 +44,61 @@ module.exports.crearStockProducto = async (req = request, res = response) => {
 
         const stockProducto = new StockProductos({ sucursal: sucursalId, producto: productoId, existencia, precio, creador: uId, fechaCreacion: Date.now(), ultimoEnModificar: uId, fechaUltimaModificacion: Date.now() });
 
-        await stockProducto.save();
+        session.startTransaction();
+
+        await stockProducto.save({ session });
+
+        const stockProductoCreado = await StockProductos.findById(stockProducto.id)
+            .populate({
+                path: 'producto',
+                options: {
+                    transform: transformarDatosPopulatedProducto
+                }
+            })
+            .populate({
+                path: 'sucursal',
+                options: {
+                    transform: transformarDatosPopulatedSucursal
+                }
+            })
+            .populate({
+                path: 'creador',
+                options: {
+                    transform: transformarDatosPopulatedUsuario
+                },
+                populate: {
+                    path: 'rol',
+                    options: {
+                        transform: transformarDatosPopulateRol
+                    }
+                }
+            })
+            .populate({
+                path: 'ultimoEnModificar',
+                options: {
+                    transform: transformarDatosPopulatedUsuario
+                },
+                populate: {
+                    path: 'rol',
+                    options: {
+                        transform: transformarDatosPopulateRol
+                    }
+                }
+            }).session(session);
+
+        await session.commitTransaction();
 
         res.status(201).json({
             ok: true,
-            message: `Producto ${producto.nombre} añadido con éxito al stock de la sucursal ${sucursal.nombre}`
-        })
+            message: `Producto ${producto.nombre} añadido con éxito al stock de la sucursal ${sucursal.nombre}`,
+            stockProducto: stockProductoCreado
+        });
 
     } catch (error) {
+        if (session?.transaction?.isActive) {
+            await session.abortTransaction();
+        }
+
         console.log(error);
 
         res.status(500).json({
@@ -56,17 +106,25 @@ module.exports.crearStockProducto = async (req = request, res = response) => {
             message: 'Algo salió mal al crear el stock, intente de nuevo y si el fallo persiste contacte al administrador'
         });
     }
+    finally {
+        if (session) {
+            await session.endSession();
+        }
+    }
 }
 
 module.exports.actualizarStock = async (req = request, res = response) => {
     const { existencia, precio } = req.body;
     const { id: stockId } = req.params;
     const { uId, esAdministrador, sucursalUsuario } = req;
+    let session = null;
 
     try {
+        session = await startSession();
+
         const stockProducto = await StockProductos.findById(stockId)
-            .populate('sucursal')
-            .populate('producto');
+            .populate('sucursal', 'activa ')
+            .populate('producto', 'activo ventaPor nombre');
 
         if (!stockProducto) {
             return res.status(404).json({
@@ -96,20 +154,72 @@ module.exports.actualizarStock = async (req = request, res = response) => {
             });
         }
 
-        await stockProducto.updateOne({ existencia, precio, ultimoEnModificar: uId, fechaUltimaModificacion: Date.now() });
+        session.startTransaction();
+
+        await stockProducto.updateOne({ existencia, precio, ultimoEnModificar: uId, fechaUltimaModificacion: Date.now() }).session(session);
+
+        const stockProductoActualizado = await StockProductos.findById(stockProducto.id)
+            .populate({
+                path: 'producto',
+                options: {
+                    transform: transformarDatosPopulatedProducto
+                }
+            })
+            .populate({
+                path: 'sucursal',
+                options: {
+                    transform: transformarDatosPopulatedSucursal
+                }
+            })
+            .populate({
+                path: 'creador',
+                options: {
+                    transform: transformarDatosPopulatedUsuario
+                },
+                populate: {
+                    path: 'rol',
+                    options: {
+                        transform: transformarDatosPopulateRol
+                    }
+                }
+            })
+            .populate({
+                path: 'ultimoEnModificar',
+                options: {
+                    transform: transformarDatosPopulatedUsuario
+                },
+                populate: {
+                    path: 'rol',
+                    options: {
+                        transform: transformarDatosPopulateRol
+                    }
+                }
+            }).session(session);
+
+        await session.commitTransaction();
 
         res.status(200).json({
             ok: true,
-            message: `Stock del producto ${stockProducto.producto.nombre} actualizado con éxito`
+            message: `Stock del producto ${stockProducto.producto.nombre} actualizado con éxito`,
+            stockProducto: stockProductoActualizado
         })
 
     } catch (error) {
+        if (session?.transaction?.isActive) {
+            await session.abortTransaction();
+        }
+
         console.log(error);
 
         res.status(500).json({
             ok: false,
             message: 'Algo salió mal al actualizar el stock, intente de nuevo y si el fallo persiste contacte al administrador'
         });
+    }
+    finally {
+        if (session) {
+            await session.endSession();
+        }
     }
 }
 
@@ -240,6 +350,7 @@ module.exports.obtenerResgistrosStockParaVenta = async (req = request, res = res
         }
 
         let stockProductos = await StockProductos.find({ sucursal: sucursalId, existencia: { $gt: 0 } })
+            .select('-creador -fechaCreacion -ultimoEnModificar -fechaUltimaModificacion')
             .populate({
                 path: 'producto',
                 options: {
