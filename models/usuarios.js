@@ -33,7 +33,8 @@ const usuarioSchema = new Schema({
     },
     sucursal: {
         type: Schema.Types.ObjectId,
-        ref: 'Sucursales'
+        ref: 'Sucursales',
+        default: null
     },
     email: {
         type: String,
@@ -61,6 +62,22 @@ const usuarioSchema = new Schema({
         type: Boolean,
         required: true,
         default: true
+    },
+    creador: {
+        type: Schema.Types.ObjectId,
+        ref: 'Usuarios'
+    },
+    fechaCreacion: {
+        type: Number,
+        required: true
+    },
+    ultimoEnModificar: {
+        type: Schema.Types.ObjectId,
+        ref: 'Usuarios'
+    },
+    fechaUltimaModificacion: {
+        type: Number,
+        required: true
     }
 });
 

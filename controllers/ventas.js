@@ -1,5 +1,5 @@
 const { request, response } = require('express');
-const { isObjectIdOrHexString, startSession} = require('mongoose');
+const { isObjectIdOrHexString, startSession } = require('mongoose');
 const { filtrarQueryParams, transformarDatosPopulatedSucursal, transformarDatosPopulatedUsuario, transformarDatosPopulateRol, transformarDatosPopulatedProducto, transformarDatosPopulatedCliente } = require('../helpers/index.js');
 const { Venta, Pago, Sucursal, Cliente, Producto, StockProductos } = require('../models/index.js');
 
@@ -56,7 +56,7 @@ module.exports.crearVenta = async (req = request, res = response) => {
             });
         }
 
-        session.startTransaction();
+        const collectionOfStockToUpdate = [];
 
         for (const stockProducto of stockProductos) {
             const articulo = articulos.find(articulo => articulo.producto === stockProducto.producto.toHexString());
@@ -76,16 +76,24 @@ module.exports.crearVenta = async (req = request, res = response) => {
                 });
             }
 
-            await stockProducto.updateOne({ $inc: { existencia: -(articulo.cantidad) } }).session(session);
+            collectionOfStockToUpdate.push({
+                updateOne: {
+                    filter: { _id: stockProducto.id },
+                    update: { $inc: { existencia: -(articulo.cantidad) } }
+                }
+            });
         }
-
         const nuevaVenta = new Venta({ sucursal, creador: uId, cliente, articulos, total, pagoCon, pago, cambio, saldo, saldada: pago === total ? true : false, fechaCreacion: Date.now() });
-
-        await nuevaVenta.save({ session });
 
         const pagoARegistrar = new Pago({ venta: nuevaVenta.id, creador: uId, fechaCreacion: nuevaVenta.fechaCreacion, pagoCon, cantidad: pago, cambio, saldo });
 
+        session.startTransaction();
+
+        await nuevaVenta.save({ session });
+
         await pagoARegistrar.save({ session });
+
+        await StockProductos.bulkWrite(collectionOfStockToUpdate, { session });
 
         await session.commitTransaction();
 
@@ -95,7 +103,10 @@ module.exports.crearVenta = async (req = request, res = response) => {
         });
 
     } catch (error) {
-        await session.abortTransaction();
+        if (session?.transaction?.isActive) {
+            await session.abortTransaction();
+        }
+
         console.log(error);
 
         res.status(500).json({
@@ -104,7 +115,9 @@ module.exports.crearVenta = async (req = request, res = response) => {
         });
     }
     finally {
-        await session.endSession();
+        if (session) {
+            await session.endSession();
+        }
     }
 }
 
@@ -113,7 +126,7 @@ module.exports.obtenerVentas = async (req = request, res = response) => {
     const { esAdministrador, esVendedor, sucursalUsuario } = req;
 
     try {
-        if (queryParams?.sucursal !== sucursalUsuario) {
+        if (esAdministrador && queryParams?.sucursal && queryParams.sucursal !== sucursalUsuario) {
             return res.status(401).json({
                 ok: false,
                 message: 'Sin acceso a ésa sucursal'

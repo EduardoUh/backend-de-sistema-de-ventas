@@ -1,4 +1,5 @@
 const { request, response } = require('express');
+const { startSession } = require('mongoose');
 const { filtrarQueryParams, transformarDatosPopulatedTipoProducto, transformarDatosPopulatedProveedor, transformarDatosPopulatedUsuario, transformarDatosPopulateRol } = require('../helpers/index.js');
 const { Producto, TipoProducto, Proveedor } = require('../models/index.js');
 
@@ -6,8 +7,11 @@ const { Producto, TipoProducto, Proveedor } = require('../models/index.js');
 module.exports.crearProducto = async (req = request, res = response) => {
     const { nombre, descripcion, tipoProducto, proveedor, ventaPor } = req.body;
     const { uId } = req;
+    let session = null;
 
     try {
+        session = await startSession();
+
         const promises = [TipoProducto.findById(tipoProducto), Proveedor.findById(proveedor)];
 
         const [tipoProductoDb, proveedorDb] = await Promise.all(promises);
@@ -21,14 +25,61 @@ module.exports.crearProducto = async (req = request, res = response) => {
 
         const producto = new Producto({ nombre, descripcion, tipoProducto, proveedor, ventaPor, creador: uId, fechaCreacion: Date.now(), ultimoEnModificar: uId, fechaUltimaModificacion: Date.now() });
 
-        await producto.save();
+        session.startTransaction();
+
+        await producto.save({ session });
+
+        const productoCreado = await Producto.findById(producto.id)
+            .populate({
+                path: 'tipoProducto',
+                options: {
+                    transform: transformarDatosPopulatedTipoProducto
+                }
+            })
+            .populate({
+                path: 'proveedor',
+                options: {
+                    transform: transformarDatosPopulatedProveedor
+                }
+            })
+            .populate({
+                path: 'creador',
+                options: {
+                    transform: transformarDatosPopulatedUsuario
+                },
+                populate: {
+                    path: 'rol',
+                    options: {
+                        transform: transformarDatosPopulateRol
+                    }
+                }
+            })
+            .populate({
+                path: 'ultimoEnModificar',
+                options: {
+                    transform: transformarDatosPopulatedUsuario
+                },
+                populate: {
+                    path: 'rol',
+                    options: {
+                        transform: transformarDatosPopulateRol
+                    }
+                }
+            }).session(session);
+
+        await session.commitTransaction();
 
         res.status(201).json({
             ok: true,
-            message: `Producto ${nombre} creado con éxito`
+            message: `Producto ${nombre} creado con éxito`,
+            producto: productoCreado
         });
 
     } catch (error) {
+        if (session?.transaction?.isActive) {
+            await session.abortTransaction();
+        }
+
         console.log(error);
 
         res.status(500).json({
@@ -36,14 +87,22 @@ module.exports.crearProducto = async (req = request, res = response) => {
             message: 'Algo salió mal al intentar registrar el producto, intente de nuevo y si el fallo persiste contacte al administrador'
         });
     }
+    finally {
+        if (session) {
+            await session.endSession();
+        }
+    }
 }
 
 module.exports.actualizarProducto = async (req = request, res = response) => {
     const { nombre, descripcion, tipoProducto, proveedor, ventaPor, activo } = req.body;
     const { id: productoId } = req.params;
     const { uId } = req;
+    let session = null;
 
     try {
+        session = await startSession();
+
         const producto = await Producto.findById(productoId);
 
         if (!producto) {
@@ -53,20 +112,72 @@ module.exports.actualizarProducto = async (req = request, res = response) => {
             });
         }
 
-        await producto.updateOne({ nombre, descripcion, tipoProducto, proveedor, ventaPor, activo, ultimoEnModificar: uId, fechaUltimaModificacion: Date.now() });
+        session.startTransaction();
+
+        await producto.updateOne({ nombre, descripcion, tipoProducto, proveedor, ventaPor, activo, ultimoEnModificar: uId, fechaUltimaModificacion: Date.now() }).session(session);
+
+        const productoActualizado = await Producto.findById(producto.id)
+            .populate({
+                path: 'tipoProducto',
+                options: {
+                    transform: transformarDatosPopulatedTipoProducto
+                }
+            })
+            .populate({
+                path: 'proveedor',
+                options: {
+                    transform: transformarDatosPopulatedProveedor
+                }
+            })
+            .populate({
+                path: 'creador',
+                options: {
+                    transform: transformarDatosPopulatedUsuario
+                },
+                populate: {
+                    path: 'rol',
+                    options: {
+                        transform: transformarDatosPopulateRol
+                    }
+                }
+            })
+            .populate({
+                path: 'ultimoEnModificar',
+                options: {
+                    transform: transformarDatosPopulatedUsuario
+                },
+                populate: {
+                    path: 'rol',
+                    options: {
+                        transform: transformarDatosPopulateRol
+                    }
+                }
+            }).session(session);
+
+        await session.commitTransaction();
 
         res.status(200).json({
             ok: true,
-            message: `Producto ${nombre} actualizado con éxito`
+            message: `Producto ${nombre} actualizado con éxito`,
+            producto: productoActualizado
         });
 
     } catch (error) {
+        if (session?.transaction?.isActive) {
+            await session.abortTransaction();
+        }
+
         console.log(error);
 
         res.status(500).json({
             ok: false,
             message: 'Algo salió mal al actualizar el producto, intente de nuevo y si el fallo persiste contacte al administrador'
         });
+    }
+    finally {
+        if (session) {
+            await session.endSession();
+        }
     }
 }
 

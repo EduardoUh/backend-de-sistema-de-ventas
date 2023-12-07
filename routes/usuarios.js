@@ -1,7 +1,7 @@
 const express = require('express');
 const { body, param } = require('express-validator');
-const { verificarToken, exponerDatosUsuario, permitirSuperUsuarios, permitirSuperUsuariosYAdministradores, permitirAdministradores, manejarResultados, revisarUsuarioYaExiste } = require('../middlewares/index.js');
-const { crearUsuario, actualizarPerfilAdminsVendedores, adminActualizaDatosVendedor, actualizarDatosAdminsVendedores, actualizarPerfilSuperUsuario, superUsuarioObtenerUsuarios, administradorObtenerUsuarios, obtenerUsuarioPorId } = require('../controllers/usuarios.js');
+const { verificarToken, exponerDatosUsuario, permitirSuperUsuariosYAdministradores, manejarResultados, revisarUsuarioYaExiste } = require('../middlewares/index.js');
+const { crearUsuario, actualizarMiPerfil, actualizarOtrosPerfiles, obtenerUsuarios, obtenerUsuarioPorId } = require('../controllers/usuarios.js');
 
 
 const usuariosRouter = express.Router();
@@ -34,18 +34,16 @@ const validadorRfc = () => body('rfc')
     .notEmpty().withMessage('El rfc no puede ser una cadena de texto vacía');
 
 const validadorIdBody = (nombre) => body(nombre)
-    .exists().withMessage(`${nombre} es ${nombre === 'rol' ? 'requerido' : 'requerida'}`)
-    .isString().withMessage(`${nombre} debe ser una cadena de texto`)
-    .trim()
-    .isLength({ min: 24, max: 24 }).withMessage(`${nombre} inválido`);
+    .exists().withMessage(`El campo ${nombre} es requerido`)
+    .isMongoId().withMessage(`El campo ${nombre} es inválido`);
 
 const validadorEmail = () => body('email')
     .exists().withMessage('El email es requerido')
     .isEmail().withMessage('El email no es válido');
 
 const validadorPassword = () => body('password')
-    .exists().withMessage('La contraseña es requerida')
-    .isString().withMessage('La contraseña debe es una cadena de texto')
+    .optional()
+    .isString().withMessage('La contraseña debe ser una cadena de texto')
     .trim()
     .isLength({ min: 5 }).withMessage('La contraseña debe contener al menos 5 caracteres');
 
@@ -67,8 +65,7 @@ const validadorActivo = () => body('activo')
     .isBoolean({ strict: true }).withMessage('Valor inválido');
 
 const validadorIdParam = () => param('id')
-    .isString().withMessage('El id debe ser una cadena de texto')
-    .isLength({ min: 24, max: 24 }).withMessage('Id inválido');
+    .isMongoId().withMessage('Id inválido');
 
 usuariosRouter.post('/usuarios',
     verificarToken,
@@ -90,26 +87,9 @@ usuariosRouter.post('/usuarios',
     crearUsuario
 );
 
-usuariosRouter.put('/usuarios/actualizar-perfil-administrador-vendedor/:id',
+usuariosRouter.put('/usuarios/mi-perfil/:id',
     verificarToken,
     exponerDatosUsuario,
-    [
-        validadorNombres(),
-        validadorApellidoPaterno(),
-        validadorApellidoMaterno(),
-        validadorEmail(),
-        validadorDireccion(),
-        validadorNumTelefono(),
-        validadorIdParam()
-    ],
-    manejarResultados,
-    actualizarPerfilAdminsVendedores
-);
-
-usuariosRouter.put('/usuarios/admin-actualiza-datos-vendedores/:id',
-    verificarToken,
-    exponerDatosUsuario,
-    permitirAdministradores,
     [
         validadorIdParam(),
         validadorNombres(),
@@ -117,18 +97,18 @@ usuariosRouter.put('/usuarios/admin-actualiza-datos-vendedores/:id',
         validadorApellidoMaterno(),
         validadorRfc(),
         validadorEmail(),
+        validadorPassword(),
         validadorDireccion(),
-        validadorNumTelefono(),
-        validadorActivo()
+        validadorNumTelefono()
     ],
     manejarResultados,
-    adminActualizaDatosVendedor
+    actualizarMiPerfil
 );
 
-usuariosRouter.put('/usuarios/actualizar-datos-administrador-vendedor/:id',
+usuariosRouter.put('/usuarios/:id',
     verificarToken,
     exponerDatosUsuario,
-    permitirSuperUsuarios,
+    permitirSuperUsuariosYAdministradores,
     [
         validadorIdParam(),
         validadorNombres(),
@@ -138,50 +118,28 @@ usuariosRouter.put('/usuarios/actualizar-datos-administrador-vendedor/:id',
         validadorIdBody('rol'),
         validadorIdBody('sucursal'),
         validadorEmail(),
+        validadorPassword(),
         validadorDireccion(),
         validadorNumTelefono(),
         validadorActivo()
     ],
     manejarResultados,
-    actualizarDatosAdminsVendedores
-);
-
-usuariosRouter.put('/usuarios/actualizar-perfil-super-usuario/:id',
-    verificarToken,
-    exponerDatosUsuario,
-    permitirSuperUsuarios,
-    [
-        validadorIdParam(),
-        validadorNombres(),
-        validadorApellidoPaterno(),
-        validadorApellidoMaterno(),
-        validadorRfc(),
-        validadorEmail(),
-        validadorDireccion(),
-        validadorNumTelefono()
-    ],
-    manejarResultados,
-    actualizarPerfilSuperUsuario
+    actualizarOtrosPerfiles
 );
 
 usuariosRouter.get('/usuarios',
     verificarToken,
     exponerDatosUsuario,
-    permitirSuperUsuarios,
-    superUsuarioObtenerUsuarios
-);
-
-usuariosRouter.get('/usuarios/vendedores',
-    verificarToken,
-    exponerDatosUsuario,
-    permitirAdministradores,
-    administradorObtenerUsuarios
+    permitirSuperUsuariosYAdministradores,
+    obtenerUsuarios
 );
 
 usuariosRouter.get('/usuarios/:id',
     verificarToken,
     exponerDatosUsuario,
     permitirSuperUsuariosYAdministradores,
+    validadorIdParam(),
+    manejarResultados,
     obtenerUsuarioPorId
 );
 

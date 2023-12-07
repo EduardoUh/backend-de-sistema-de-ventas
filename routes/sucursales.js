@@ -86,7 +86,7 @@ sucursalesRouter.get('/sucursales/:id',
 sucursalesRouter.get('/sucursales',
     verificarToken,
     exponerDatosUsuario,
-    permitirSuperUsuarios,
+    permitirSuperUsuariosYAdministradores,
     obtenerSucursales
 );
 

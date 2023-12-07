@@ -33,6 +33,19 @@ const sucursalSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'Usuarios',
         required: true
+    },
+    fechaCreacion: {
+        type: Number,
+        required: true
+    },
+    ultimoEnModificar: {
+        type: Schema.Types.ObjectId,
+        ref: 'Usuarios',
+        required: true
+    },
+    fechaUltimaModificacion: {
+        type: Number,
+        required: true
     }
 });
 

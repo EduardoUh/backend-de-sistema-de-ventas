@@ -1,6 +1,6 @@
 const express = require('express');
 const { body, param } = require('express-validator');
-const { verificarToken, exponerDatosUsuario, permitirSuperUsuariosYAdministradores, manejarResultados, revisarClienteYaExiste } = require('../middlewares/index.js');
+const { verificarToken, exponerDatosUsuario, manejarResultados, revisarClienteYaExiste } = require('../middlewares/index.js');
 const { crearCliente, actualizarCliente, ObtenerClientes, obtenerCliente } = require('../controllers/clientes.js');
 
 const clientesRouter = express.Router();
@@ -60,7 +60,6 @@ const validadorIdParam = () => param('id')
 clientesRouter.post('/clientes',
     verificarToken,
     exponerDatosUsuario,
-    permitirSuperUsuariosYAdministradores,
     [
         validadorNombres(),
         validadorApellidoPaterno(),
@@ -78,7 +77,6 @@ clientesRouter.post('/clientes',
 clientesRouter.put('/clientes/:id',
     verificarToken,
     exponerDatosUsuario,
-    permitirSuperUsuariosYAdministradores,
     [
         validadorIdParam(),
         validadorNombres(),
@@ -103,7 +101,6 @@ clientesRouter.get('/clientes',
 clientesRouter.get('/clientes/:id',
     verificarToken,
     exponerDatosUsuario,
-    permitirSuperUsuariosYAdministradores,
     validadorIdParam(),
     manejarResultados,
     obtenerCliente
