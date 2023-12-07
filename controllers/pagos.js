@@ -62,15 +62,32 @@ module.exports.crearPago = async (req = request, res = response) => {
 
         await ventaDb.save({ session });
 
+        const pagoCreado = await Pago.findById(pago.id)
+            .populate({
+                path: 'creador',
+                options: {
+                    transform: transformarDatosPopulatedUsuario
+                },
+                populate: {
+                    path: 'rol',
+                    options: {
+                        transform: transformarDatosPopulateRol
+                    }
+                }
+            }).session(session);
+
         await session.commitTransaction();
 
         res.status(201).json({
             ok: true,
-            message: 'Pago creado correctamente'
+            message: 'Pago creado correctamente',
+            pago: pagoCreado
         });
 
     } catch (error) {
-        await session.abortTransaction();
+        if (session?.transaction?.isActive) {
+            await session.abortTransaction();
+        }
 
         console.log(error);
 
@@ -80,7 +97,9 @@ module.exports.crearPago = async (req = request, res = response) => {
         });
     }
     finally {
-        await session.endSession();
+        if (session) {
+            await session.endSession();
+        }
     }
 }
 
