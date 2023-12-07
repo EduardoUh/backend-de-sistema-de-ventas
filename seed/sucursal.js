@@ -1,8 +1,11 @@
 module.exports.sucursal = {
-    nombre: "Habaneros palma tekax",
-    ciudad: "Tekax",
+    nombre: "Habaneros palma xaya",
+    ciudad: "xaya",
     direccion: "San francisco, calle 64 / 84 y 86",
-    email: "habanerospalmatekax@gmail.com",
+    email: "habanerospalmaxaya@gmail.com",
     activa: true,
-    creador: null
+    creador: null,
+    fechaCreacion: null,
+    ultimoEnModificar: null,
+    fechaUltimaModificacion: null
 };
