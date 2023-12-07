@@ -91,7 +91,10 @@ module.exports.crearCompra = async (req = request, res = response) => {
         });
 
     } catch (error) {
-        await session.abortTransaction();
+        if (session?.transaction?.isActive) {
+            await session.abortTransaction();
+        }
+
         console.log(error);
 
         res.status(500).json({
@@ -100,7 +103,9 @@ module.exports.crearCompra = async (req = request, res = response) => {
         });
     }
     finally {
-        await session.endSession();
+        if (session) {
+            await session.endSession();
+        }
     }
 }
 
