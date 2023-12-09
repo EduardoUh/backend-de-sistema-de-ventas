@@ -1,6 +1,6 @@
 const express = require('express');
 const { body, param } = require('express-validator');
-const { verificarToken, exponerDatosUsuario, verificarPermisosModuloUsuarios, permitirSuperUsuariosYAdministradores, manejarResultados, revisarUsuarioYaExiste } = require('../middlewares/index.js');
+const { verificarToken, exponerDatosUsuario, verificarPermisosModuloUsuarios, verificarPermisosModuloPerfil, manejarResultados, revisarUsuarioYaExiste } = require('../middlewares/index.js');
 const { crearUsuario, actualizarMiPerfil, actualizarOtrosPerfiles, obtenerUsuarios, obtenerUsuarioPorId } = require('../controllers/usuarios.js');
 
 
@@ -60,6 +60,38 @@ const validadorNumTelefono = () => body('numTelefono')
     .trim()
     .notEmpty().withMessage('EL número de teléfono no puede ser una cadena de texto vacía');
 
+const validadorModulos = () => body('modulos')
+    .exists().withMessage('El campo módulos es requerido')
+    .isArray({ min: 1 }).withMessage('El campo módulo debe ser una collección con al menos un elemento')
+    .custom(modulos => {
+        for (const modulo of modulos) {
+            if (typeof modulo !== 'object' || Array.isArray(modulo) || Object.keys(modulo).length !== 4) {
+                return false;
+            }
+
+            if (!modulo.nombre || typeof modulo.nombre !== 'string') {
+                return false;
+            }
+            if (!modulo.componente || typeof modulo.componente !== 'string') {
+                return false;
+            }
+            if (!modulo.ruta || typeof modulo.ruta !== 'string') {
+                return false;
+            }
+            if (!modulo.permisos || typeof modulo.permisos !== 'object' || !Array.isArray(modulo.permisos)) {
+                return false;
+            }
+
+            for (const permiso of modulo.permisos) {
+                if (typeof permiso !== 'string') {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }).withMessage('Datos inválidos en algún módulo o permiso');
+
 const validadorActivo = () => body('activo')
     .exists().withMessage('El estado es requerido')
     .isBoolean({ strict: true }).withMessage('Valor inválido');
@@ -80,7 +112,8 @@ usuariosRouter.post('/usuarios',
         validadorEmail(),
         validadorPassword(),
         validadorDireccion(),
-        validadorNumTelefono()
+        validadorNumTelefono(),
+        validadorModulos()
     ],
     manejarResultados,
     revisarUsuarioYaExiste,
@@ -90,7 +123,7 @@ usuariosRouter.post('/usuarios',
 usuariosRouter.put('/usuarios/mi-perfil/:id',
     verificarToken,
     exponerDatosUsuario,
-    verificarPermisosModuloUsuarios,
+    verificarPermisosModuloPerfil,
     [
         validadorIdParam(),
         validadorNombres(),
@@ -122,6 +155,7 @@ usuariosRouter.put('/usuarios/:id',
         validadorPassword(),
         validadorDireccion(),
         validadorNumTelefono(),
+        validadorModulos(),
         validadorActivo()
     ],
     manejarResultados,

@@ -12,6 +12,12 @@ module.exports.modulos = [
         permisos: ['crear', 'ver', 'actualizar']
     },
     {
+        nombre: 'PERFIL',
+        componente: 'Perfil',
+        ruta: '/perfil',
+        permisos: ['actualizar']
+    },
+    {
         nombre: 'PROVEEDORES',
         componente: 'Proveedores',
         ruta: '/proveedores',
