@@ -1,6 +1,6 @@
 const express = require('express');
 const { body, param } = require('express-validator');
-const { verificarToken, exponerDatosUsuario, permitirSuperUsuariosYAdministradores, manejarResultados, revisarUsuarioYaExiste } = require('../middlewares/index.js');
+const { verificarToken, exponerDatosUsuario, verificarPermisosModuloUsuarios, permitirSuperUsuariosYAdministradores, manejarResultados, revisarUsuarioYaExiste } = require('../middlewares/index.js');
 const { crearUsuario, actualizarMiPerfil, actualizarOtrosPerfiles, obtenerUsuarios, obtenerUsuarioPorId } = require('../controllers/usuarios.js');
 
 
@@ -70,7 +70,7 @@ const validadorIdParam = () => param('id')
 usuariosRouter.post('/usuarios',
     verificarToken,
     exponerDatosUsuario,
-    permitirSuperUsuariosYAdministradores,
+    verificarPermisosModuloUsuarios,
     [
         validadorNombres(),
         validadorApellidoPaterno(),
@@ -90,6 +90,7 @@ usuariosRouter.post('/usuarios',
 usuariosRouter.put('/usuarios/mi-perfil/:id',
     verificarToken,
     exponerDatosUsuario,
+    verificarPermisosModuloUsuarios,
     [
         validadorIdParam(),
         validadorNombres(),
@@ -108,7 +109,7 @@ usuariosRouter.put('/usuarios/mi-perfil/:id',
 usuariosRouter.put('/usuarios/:id',
     verificarToken,
     exponerDatosUsuario,
-    permitirSuperUsuariosYAdministradores,
+    verificarPermisosModuloUsuarios,
     [
         validadorIdParam(),
         validadorNombres(),
@@ -130,14 +131,14 @@ usuariosRouter.put('/usuarios/:id',
 usuariosRouter.get('/usuarios',
     verificarToken,
     exponerDatosUsuario,
-    permitirSuperUsuariosYAdministradores,
+    verificarPermisosModuloUsuarios,
     obtenerUsuarios
 );
 
 usuariosRouter.get('/usuarios/:id',
     verificarToken,
     exponerDatosUsuario,
-    permitirSuperUsuariosYAdministradores,
+    verificarPermisosModuloUsuarios,
     validadorIdParam(),
     manejarResultados,
     obtenerUsuarioPorId

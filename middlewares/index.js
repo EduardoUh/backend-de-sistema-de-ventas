@@ -1,17 +1,18 @@
-const { manejarResultados } = require('./manejarResultados.js');
-const { verificarToken } = require('./verificarToken.js');
-const { exponerDatosUsuario } = require('./exponerDatosUsuario.js');
-const { revisarSucursalYaExiste } = require('./revisarSucursalYaExiste.js');
+const { manejarResultados } = require('./generales/manejarResultados.js');
+const { verificarToken } = require('./generales/verificarToken.js');
+const { exponerDatosUsuario } = require('./generales/exponerDatosUsuario.js');
+const { revisarSucursalYaExiste } = require('./revisarRecursoYaExiste/revisarSucursalYaExiste.js');
 const { permitirSuperUsuarios } = require('./permitirSuperUsuarios.js');
 const { permitirSuperUsuariosYAdministradores } = require('./permitirSuperUsuariosYAdministradores.js');
 const { permitirAdministradores } = require('./permitirAdministradores.js');
-const { verificarAdministradorPerteneceSucursal } = require('./verificarAdministradorPerteneceSucursal.js');
-const { revisarUsuarioYaExiste } = require('./revisarUsuarioYaExiste.js');
-const { revisarProveedorYaExiste } = require('./revisarProveedorYaExiste.js');
-const { revisarTipoProductoYaExiste } = require('./revisarTipoProductoYaExiste.js');
-const { revisarProductoYaExiste } = require('./revisarProductoYaExiste.js');
-const { revisarStockProductoYaExiste } = require('./revisarStockProductoYaExiste.js');
-const { revisarClienteYaExiste } = require('./revisarClienteYaExiste.js');
+const { verificarAdministradorPerteneceSucursal } = require('./sucursales/verificarAdministradorPerteneceSucursal.js');
+const { revisarUsuarioYaExiste } = require('./revisarRecursoYaExiste/revisarUsuarioYaExiste.js');
+const { revisarProveedorYaExiste } = require('./revisarRecursoYaExiste/revisarProveedorYaExiste.js');
+const { revisarTipoProductoYaExiste } = require('./revisarRecursoYaExiste/revisarTipoProductoYaExiste.js');
+const { revisarProductoYaExiste } = require('./revisarRecursoYaExiste/revisarProductoYaExiste.js');
+const { revisarStockProductoYaExiste } = require('./revisarRecursoYaExiste/revisarStockProductoYaExiste.js');
+const { revisarClienteYaExiste } = require('./revisarRecursoYaExiste/revisarClienteYaExiste.js');
+const { verificarPermisosModuloUsuarios } = require('./verificarPermisos/verificarPermisosModuloUsuarios.js');
 
 module.exports = {
     manejarResultados,
@@ -27,5 +28,6 @@ module.exports = {
     revisarTipoProductoYaExiste,
     revisarProductoYaExiste,
     revisarStockProductoYaExiste,
-    revisarClienteYaExiste
+    revisarClienteYaExiste,
+    verificarPermisosModuloUsuarios
 };

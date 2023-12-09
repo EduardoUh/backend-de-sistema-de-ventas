@@ -1,5 +1,5 @@
 const { request, response } = require('express');
-const { extraerDatosJwt } = require('../helpers/index.js');
+const { extraerDatosJwt } = require('../../helpers/index.js');
 
 
 module.exports.verificarToken = async (req = request, res = response, next) => {
@@ -16,7 +16,7 @@ module.exports.verificarToken = async (req = request, res = response, next) => {
         const { uId } = await extraerDatosJwt(token);
 
         req.uId = uId;
-        
+
         next();
 
     } catch (error) {

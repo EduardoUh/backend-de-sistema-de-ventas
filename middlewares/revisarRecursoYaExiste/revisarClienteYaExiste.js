@@ -1,5 +1,5 @@
 const { request, response } = require('express');
-const { Cliente } = require('../models/index.js');
+const { Cliente } = require('../../models/index.js');
 
 module.exports.revisarClienteYaExiste = async (req = request, res = response, next) => {
     const { rfc, email } = req.body;
