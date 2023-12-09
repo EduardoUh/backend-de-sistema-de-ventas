@@ -11,6 +11,7 @@ module.exports.usuario = {
     password: bcrypt.hashSync('superusuario', 12),
     direccion: 'dirección',
     numTelefono: '997-735-84-92',
+    modulos: null,
     creador: '123456789123456789123456',
     fechaCreacion: 123456,
     UltimoEnModificar: '123456789123456789123456',

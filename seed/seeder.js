@@ -1,11 +1,11 @@
 require('dotenv').config();
 const { startSession, disconnect, connection } = require('mongoose');
 const { connectDb } = require('../db/config.js');
-const { Rol, Sucursal, Usuario, Developer } = require('../models/index.js');
+const { Rol, Sucursal, Usuario, Modulo } = require('../models/index.js');
 const { roles } = require('./roles.js');
 const { sucursal } = require('./sucursal.js');
 const { usuario } = require('./usuario.js');
-const { developer } = require('./developer.js');
+const { modulos } = require('./modulos.js');
 
 const importarDatos = async () => {
     let session = null;
@@ -16,6 +16,10 @@ const importarDatos = async () => {
         session = await startSession();
 
         session.startTransaction();
+
+        const modulosCreados = await Modulo.insertMany(modulos, { session });
+
+        usuario.modulos = modulosCreados;
 
         const rolesCreados = await Rol.insertMany(roles, { session });
 
@@ -41,20 +45,9 @@ const importarDatos = async () => {
 
         await sucursalCreada.save({ session });
 
-        developer.rol = superUsuarioRol;
-
-        const developerCreado = new Developer(developer);
-
-        developerCreado.creador = developerCreado.id;
-        developerCreado.fechaCreacion = Date.now();
-        developerCreado.ultimoEnModificar = developerCreado.id;
-        developerCreado.fechaUltimaModificacion = Date.now();
-
-        await developerCreado.save({ session });
-
         await session.commitTransaction();
 
-        console.log('Roles, usuario y sucursal creados exitosamente');
+        console.log('Modulos, roles, usuario y sucursal creados exitosamente');
 
     } catch (error) {
         if (session?.transaction?.isActive) {

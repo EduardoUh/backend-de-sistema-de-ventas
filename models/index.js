@@ -9,6 +9,7 @@ const { Cliente } = require('./Clientes.js');
 const { Venta } = require('./Ventas.js');
 const { Pago } = require('./Pagos.js');
 const { Compra } = require('./Compras.js');
+const { Modulo } = require('./Modulos.js');
 
 module.exports = {
     Rol,
@@ -21,5 +22,6 @@ module.exports = {
     Cliente,
     Venta,
     Pago,
-    Compra
+    Compra,
+    Modulo
 };
