@@ -23,6 +23,13 @@ module.exports.login = async (req = request, res = response) => {
             });
         }
 
+        if (usuario.sucursal?.activa === false) {
+            return res.status(401).json({
+                ok: false,
+                message: 'Tú sucursal se encuentra desactivada'
+            });
+        }
+
         const coinciden = await compare(password, usuario.password);
 
         if (!coinciden) {
