@@ -6,7 +6,9 @@ module.exports.exponerDatosUsuario = async (req = request, res = response, next)
     const { uId } = req;
     try {
         const usuario = await Usuario.findById(uId)
-            .populate('rol');
+            .select('rol sucursal activo modulos -_id')
+            .populate('rol', 'rol -_id')
+            .populate('sucursal', 'activa _id');
 
         if (!usuario) {
             return res.status(404).json({
@@ -15,10 +17,10 @@ module.exports.exponerDatosUsuario = async (req = request, res = response, next)
             });
         }
 
-        if (!usuario.activo) {
+        if (!usuario.activo || usuario.sucursal?.activa === false) {
             return res.status(401).json({
                 ok: false,
-                message: 'El usuario se encuentra desactivado'
+                message: 'El usuario o la sucursal se encuentran desactivados'
             });
         }
 
