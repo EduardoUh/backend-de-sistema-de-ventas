@@ -5,7 +5,7 @@ const { revisarSucursalYaExiste } = require('./revisarRecursoYaExiste/revisarSuc
 const { permitirSuperUsuarios } = require('./permitirSuperUsuarios.js');
 const { permitirSuperUsuariosYAdministradores } = require('./permitirSuperUsuariosYAdministradores.js');
 const { permitirAdministradores } = require('./permitirAdministradores.js');
-const { verificarAdministradorPerteneceSucursal } = require('./sucursales/verificarAdministradorPerteneceSucursal.js');
+const { verificarUsuarioPerteneceSucursal } = require('./sucursales/verificarUsuarioPerteneceSucursal.js');
 const { revisarUsuarioYaExiste } = require('./revisarRecursoYaExiste/revisarUsuarioYaExiste.js');
 const { revisarProveedorYaExiste } = require('./revisarRecursoYaExiste/revisarProveedorYaExiste.js');
 const { revisarTipoProductoYaExiste } = require('./revisarRecursoYaExiste/revisarTipoProductoYaExiste.js');
@@ -14,6 +14,7 @@ const { revisarStockProductoYaExiste } = require('./revisarRecursoYaExiste/revis
 const { revisarClienteYaExiste } = require('./revisarRecursoYaExiste/revisarClienteYaExiste.js');
 const { verificarPermisosModuloUsuarios } = require('./verificarPermisos/verificarPermisosModuloUsuarios.js');
 const { verificarPermisosModuloPerfil } = require('./verificarPermisos/verificarPermisosModuloPerfil.js');
+const { verificarPermisosModuloSucursales } = require('./verificarPermisos/verificarPermisosModuloSucursales.js');
 
 module.exports = {
     manejarResultados,
@@ -23,7 +24,7 @@ module.exports = {
     permitirSuperUsuarios,
     permitirSuperUsuariosYAdministradores,
     permitirAdministradores,
-    verificarAdministradorPerteneceSucursal,
+    verificarUsuarioPerteneceSucursal,
     revisarUsuarioYaExiste,
     revisarProveedorYaExiste,
     revisarTipoProductoYaExiste,
@@ -31,5 +32,6 @@ module.exports = {
     revisarStockProductoYaExiste,
     revisarClienteYaExiste,
     verificarPermisosModuloUsuarios,
-    verificarPermisosModuloPerfil
+    verificarPermisosModuloPerfil,
+    verificarPermisosModuloSucursales,
 };
