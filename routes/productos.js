@@ -1,6 +1,6 @@
 const express = require('express');
 const { body, param } = require('express-validator');
-const { verificarToken, exponerDatosUsuario, permitirSuperUsuariosYAdministradores, manejarResultados, revisarProductoYaExiste } = require('../middlewares/index.js');
+const { verificarToken, exponerDatosUsuario, verificarPermisosModuloProductos, manejarResultados, revisarProductoYaExiste } = require('../middlewares/index.js');
 const { crearProducto, actualizarProducto, obtenerProductos, obtenerProducto } = require('../controllers/productos.js');
 
 
@@ -49,7 +49,7 @@ const validadorIdParam = () => param('id')
 productosRouter.post('/productos',
     verificarToken,
     exponerDatosUsuario,
-    permitirSuperUsuariosYAdministradores,
+    verificarPermisosModuloProductos,
     [
         validadorNombre(),
         validadorDescripcion(),
@@ -65,7 +65,7 @@ productosRouter.post('/productos',
 productosRouter.put('/productos/:id',
     verificarToken,
     exponerDatosUsuario,
-    permitirSuperUsuariosYAdministradores,
+    verificarPermisosModuloProductos,
     [
         validadorIdParam(),
         validadorNombre(),
@@ -82,13 +82,14 @@ productosRouter.put('/productos/:id',
 productosRouter.get('/productos',
     verificarToken,
     exponerDatosUsuario,
+    verificarPermisosModuloProductos,
     obtenerProductos
 );
 
 productosRouter.get('/productos/:id',
     verificarToken,
     exponerDatosUsuario,
-    permitirSuperUsuariosYAdministradores,
+    verificarPermisosModuloProductos,
     validadorIdParam(),
     manejarResultados,
     obtenerProducto
