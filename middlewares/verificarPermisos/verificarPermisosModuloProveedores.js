@@ -16,21 +16,21 @@ module.exports.verificarPermisosModuloProveedores = (req = request, res = respon
             });
         }
 
-        if (method === 'POST' && moduloProveedores && !moduloProveedores.permisos.find(permiso => permiso === 'CREAR')) {
+        if (method === 'POST' && !moduloProveedores?.permisos?.find(permiso => permiso === 'CREAR')) {
             return res.status(401).json({
                 ok: false,
                 message: 'Sin las credenciales necesarias para ésta acción'
             });
         }
 
-        if (method === 'PUT' && moduloProveedores && !moduloProveedores.permisos.find(permiso => permiso === 'ACTUALIZAR')) {
+        if (method === 'PUT' && !moduloProveedores?.permisos?.find(permiso => permiso === 'ACTUALIZAR')) {
             return res.status(401).json({
                 ok: false,
                 message: 'Sin las credenciales necesarias para ésta acción'
             });
         }
 
-        if ((method === 'GET' && moduloProveedores && !moduloProveedores.permisos.find(permiso => permiso === 'VER')) && (method === 'GET' && moduloProductos && !moduloProductos.permisos.find(permiso => permiso === 'CREAR')) && (method === 'GET' && moduloCrearCompra && !moduloCrearCompra.permisos.find(permiso => permiso === 'CREAR'))) {
+        if ((method === 'GET' && !moduloProveedores?.permisos?.find(permiso => permiso === 'VER')) && (method === 'GET' && !moduloProductos?.permisos?.find(permiso => permiso === 'CREAR')) && (method === 'GET' && !moduloCrearCompra?.permisos?.find(permiso => permiso === 'CREAR'))) {
             return res.status(401).json({
                 ok: false,
                 message: 'Sin las credenciales necesarias para ésta acción'

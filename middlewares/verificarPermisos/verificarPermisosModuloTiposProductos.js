@@ -15,21 +15,21 @@ module.exports.verificarPermisosModuloTiposProductos = (req = request, res = res
             });
         }
 
-        if (method === 'POST' && moduloTiposProductos && !moduloTiposProductos.permisos.find(permiso => permiso === 'CREAR')) {
+        if (method === 'POST' && !moduloTiposProductos?.permisos?.find(permiso => permiso === 'CREAR')) {
             return res.status(401).json({
                 ok: false,
                 message: 'Sin las credenciales necesarias para ésta acción'
             });
         }
 
-        if (method === 'PUT' && moduloTiposProductos && !moduloTiposProductos.permisos.find(permiso => permiso === 'ACTUALIZAR')) {
+        if (method === 'PUT' && !moduloTiposProductos?.permisos?.find(permiso => permiso === 'ACTUALIZAR')) {
             return res.status(401).json({
                 ok: false,
                 message: 'Sin las credenciales necesarias para ésta acción'
             });
         }
 
-        if ((method === 'GET' && moduloTiposProductos && !moduloTiposProductos.permisos.find(permiso => permiso === 'VER')) && (method === 'GET' && moduloProductos && !moduloProductos.permisos.find(permiso => permiso === 'CREAR'))) {
+        if ((method === 'GET' && !moduloTiposProductos?.permisos?.find(permiso => permiso === 'VER')) && (method === 'GET' && !moduloProductos?.permisos?.find(permiso => permiso === 'CREAR'))) {
             return res.status(401).json({
                 ok: false,
                 message: 'Sin las credenciales necesarias para ésta acción'
