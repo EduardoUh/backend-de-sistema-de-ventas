@@ -6,13 +6,13 @@ const { Producto, Sucursal, StockProductos } = require('../models/index.js');
 
 module.exports.crearStockProducto = async (req = request, res = response) => {
     const { producto: productoId, sucursal: sucursalId, existencia, precio } = req.body;
-    const { uId, esAdministrador, sucursalUsuario } = req;
+    const { uId, esSuperUsuario, sucursalUsuario } = req;
     let session = null;
 
     try {
         session = await startSession();
 
-        if (esAdministrador && sucursalUsuario !== sucursalId) {
+        if (!esSuperUsuario && sucursalUsuario !== sucursalId) {
             return res.status(401).json({
                 ok: false,
                 message: 'Sin acceso a ésta sucursal'
@@ -116,7 +116,7 @@ module.exports.crearStockProducto = async (req = request, res = response) => {
 module.exports.actualizarStock = async (req = request, res = response) => {
     const { existencia, precio } = req.body;
     const { id: stockId } = req.params;
-    const { uId, esAdministrador, sucursalUsuario } = req;
+    const { uId, esSuperUsuario, sucursalUsuario } = req;
     let session = null;
 
     try {
@@ -140,7 +140,7 @@ module.exports.actualizarStock = async (req = request, res = response) => {
             });
         }
 
-        if (esAdministrador && sucursalUsuario !== stockProducto.sucursal._id.toHexString()) {
+        if (!esSuperUsuario && sucursalUsuario !== stockProducto.sucursal._id.toHexString()) {
             return res.status(401).json({
                 ok: false,
                 message: 'Sin acceso a ésta sucursal'
@@ -225,12 +225,19 @@ module.exports.actualizarStock = async (req = request, res = response) => {
 
 module.exports.obtenerResgistrosStock = async (req = request, res = response) => {
     const queryParams = req.query;
-    const { esAdministrador, sucursalUsuario } = req;
+    const { esSuperUsuario, sucursalUsuario } = req;
 
     try {
         let stockProductos;
 
-        if (esAdministrador) {
+        if (!esSuperUsuario && queryParams.sucursal && queryParams.sucursal !== sucursalUsuario) {
+            return res.status(401).json({
+                ok: false,
+                message: 'Sin ácceso a ésa sucursal'
+            });
+        }
+
+        if (!esSuperUsuario) {
             const params = filtrarQueryParams(queryParams, ['producto', 'existencia', 'precio', 'creador', 'fechaCreacion', 'ultimoEnModificar', 'fechaUltimaModificacion']);
 
             params.sucursal = sucursalUsuario;
@@ -339,10 +346,10 @@ module.exports.obtenerResgistrosStock = async (req = request, res = response) =>
 
 module.exports.obtenerResgistrosStockParaVenta = async (req = request, res = response) => {
     const { id: sucursalId } = req.params;
-    const { esAdministrador, esVendedor, sucursalUsuario } = req;
+    const { esSuperUsuario, sucursalUsuario } = req;
 
     try {
-        if (esAdministrador && sucursalUsuario !== sucursalId || esVendedor && sucursalUsuario !== sucursalId) {
+        if (!esSuperUsuario && sucursalUsuario !== sucursalId) {
             return res.status(401).json({
                 ok: false,
                 message: 'Sin acceso a ésa sucursal'
@@ -390,7 +397,7 @@ module.exports.obtenerResgistrosStockParaVenta = async (req = request, res = res
 
 module.exports.obtenerStockPorId = async (req = request, res = response) => {
     const { id: stockId } = req.params;
-    const { esAdministrador, sucursalUsuario } = req;
+    const { esSuperUsuario, sucursalUsuario } = req;
 
     try {
         const stock = await StockProductos.findById(stockId)
@@ -438,7 +445,7 @@ module.exports.obtenerStockPorId = async (req = request, res = response) => {
             });
         }
 
-        if (esAdministrador && sucursalUsuario !== stock.sucursal.id.toString()) {
+        if (!esSuperUsuario && sucursalUsuario !== stock.sucursal.id.toString()) {
             return res.status(401).json({
                 ok: false,
                 message: 'Sin acceso al stock de ésa sucursal'

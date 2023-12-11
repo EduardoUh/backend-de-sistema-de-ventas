@@ -1,6 +1,6 @@
 const express = require('express');
 const { body, param } = require('express-validator');
-const { verificarToken, exponerDatosUsuario, permitirSuperUsuariosYAdministradores, manejarResultados, revisarStockProductoYaExiste } = require('../middlewares/index.js');
+const { verificarToken, exponerDatosUsuario, verificarPermisosModuloStock, manejarResultados, revisarStockProductoYaExiste } = require('../middlewares/index.js');
 const { crearStockProducto, actualizarStock, obtenerResgistrosStock, obtenerResgistrosStockParaVenta, obtenerStockPorId } = require('../controllers/stockProductos.js');
 
 
@@ -34,7 +34,7 @@ const validadorId = () => param('id')
 stockProductoRouter.post('/stockProductos',
     verificarToken,
     exponerDatosUsuario,
-    permitirSuperUsuariosYAdministradores,
+    verificarPermisosModuloStock,
     [
         validadorProductoId(),
         validadorSucursalId(),
@@ -49,7 +49,7 @@ stockProductoRouter.post('/stockProductos',
 stockProductoRouter.put('/stockProductos/:id',
     verificarToken,
     exponerDatosUsuario,
-    permitirSuperUsuariosYAdministradores,
+    verificarPermisosModuloStock,
     [
         validadorId(),
         validadorCantidades('existencia'),
@@ -62,13 +62,14 @@ stockProductoRouter.put('/stockProductos/:id',
 stockProductoRouter.get('/stockProductos',
     verificarToken,
     exponerDatosUsuario,
-    permitirSuperUsuariosYAdministradores,
+    verificarPermisosModuloStock,
     obtenerResgistrosStock
 );
 
 stockProductoRouter.get('/stockProductos/sucursal/:id',
     verificarToken,
     exponerDatosUsuario,
+    verificarPermisosModuloStock,
     validadorId(),
     manejarResultados,
     obtenerResgistrosStockParaVenta
@@ -77,7 +78,7 @@ stockProductoRouter.get('/stockProductos/sucursal/:id',
 stockProductoRouter.get('/stockProductos/:id',
     verificarToken,
     exponerDatosUsuario,
-    permitirSuperUsuariosYAdministradores,
+    verificarPermisosModuloStock,
     validadorId(),
     manejarResultados,
     obtenerStockPorId
