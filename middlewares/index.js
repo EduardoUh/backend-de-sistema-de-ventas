@@ -15,6 +15,7 @@ const { revisarClienteYaExiste } = require('./revisarRecursoYaExiste/revisarClie
 const { verificarPermisosModuloUsuarios } = require('./verificarPermisos/verificarPermisosModuloUsuarios.js');
 const { verificarPermisosModuloPerfil } = require('./verificarPermisos/verificarPermisosModuloPerfil.js');
 const { verificarPermisosModuloSucursales } = require('./verificarPermisos/verificarPermisosModuloSucursales.js');
+const { verificarPermisosModuloRoles } = require('./verificarPermisos/verificarPermisosModuloRoles.js');
 
 module.exports = {
     manejarResultados,
@@ -34,4 +35,5 @@ module.exports = {
     verificarPermisosModuloUsuarios,
     verificarPermisosModuloPerfil,
     verificarPermisosModuloSucursales,
+    verificarPermisosModuloRoles,
 };
