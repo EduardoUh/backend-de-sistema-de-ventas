@@ -6,7 +6,7 @@ const { Venta, Pago } = require('../models/index.js');
 
 module.exports.crearPago = async (req = request, res = response) => {
     const { venta, pagoCon, cantidad, cambio, saldo } = req.body;
-    const { uId, esAdministrador, esVendedor, sucursalUsuario } = req;
+    const { uId, esSuperUsuario, sucursalUsuario } = req;
     let session = null;
     try {
         session = await startSession();
@@ -27,7 +27,7 @@ module.exports.crearPago = async (req = request, res = response) => {
             });
         }
 
-        if (esAdministrador && sucursalUsuario !== ventaDb.sucursal.toHexString() || esVendedor && sucursalUsuario !== ventaDb.sucursal.toHexString()) {
+        if (!esSuperUsuario && sucursalUsuario !== ventaDb.sucursal.toHexString()) {
             return res.status(401).json({
                 ok: false,
                 message: 'Sin acceso a ésa sucursal'
@@ -105,7 +105,7 @@ module.exports.crearPago = async (req = request, res = response) => {
 
 module.exports.ObtenerPagosPorVenta = async (req = request, res = response) => {
     const { id: ventaId } = req.params;
-    const { esAdministrador, esVendedor, sucursalUsuario } = req;
+    const { esSuperUsuario, sucursalUsuario } = req;
 
     try {
         const venta = await Venta.findById(ventaId);
@@ -117,7 +117,7 @@ module.exports.ObtenerPagosPorVenta = async (req = request, res = response) => {
             });
         }
 
-        if (esAdministrador && sucursalUsuario !== venta.sucursal.toHexString() || esVendedor && sucursalUsuario !== venta.sucursal.toHexString()) {
+        if (!esSuperUsuario && sucursalUsuario !== venta.sucursal.toHexString()) {
             return res.status(401).json({
                 ok: false,
                 message: 'Sin acceso a ésa sucursal'

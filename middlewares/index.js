@@ -23,6 +23,7 @@ const { verificarPermisosModuloStock } = require('./verificarPermisos/verificarP
 const { verificarPermisosModuloClientes } = require('./verificarPermisos/verificarPermisosModuloClientes.js');
 const { verificarPermisosModuloCrearVenta } = require('./verificarPermisos/verificarPermisosModuloCrearVenta.js');
 const { verificarPermisosModuloVentas } = require('./verificarPermisos/verificarPermisosModuloVentas.js');
+const { verificarPermisosModuloPagos } = require('./verificarPermisos/verificarPermisosModuloPagos.js');
 
 module.exports = {
     manejarResultados,
@@ -49,5 +50,6 @@ module.exports = {
     verificarPermisosModuloStock,
     verificarPermisosModuloClientes,
     verificarPermisosModuloCrearVenta,
-    verificarPermisosModuloVentas
+    verificarPermisosModuloVentas,
+    verificarPermisosModuloPagos,
 };
