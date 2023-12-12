@@ -1,7 +1,7 @@
 const express = require('express');
 const { body, param } = require('express-validator');
 const { isObjectIdOrHexString } = require('mongoose');
-const { verificarToken, exponerDatosUsuario, manejarResultados } = require('../middlewares/index.js');
+const { verificarToken, exponerDatosUsuario, verificarPermisosModuloCrearVenta, manejarResultados } = require('../middlewares/index.js');
 const { crearVenta, obtenerVentas, obtenerVenta } = require('../controllers/ventas.js');
 
 
@@ -50,6 +50,7 @@ const validadorIdParam = () => param('id')
 ventasRouter.post('/ventas',
     verificarToken,
     exponerDatosUsuario,
+    verificarPermisosModuloCrearVenta,
     [
         validadorBodyId('sucursal'),
         validadorArticulosArray(),

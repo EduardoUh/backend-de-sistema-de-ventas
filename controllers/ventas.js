@@ -6,13 +6,13 @@ const { Venta, Pago, Sucursal, Cliente, Producto, StockProductos } = require('..
 
 module.exports.crearVenta = async (req = request, res = response) => {
     const { sucursal, cliente, articulos, total, pagoCon, pago, cambio, saldo } = req.body;
-    const { uId, esAdministrador, esVendedor, sucursalUsuario } = req;
+    const { uId, esSuperUsuario, sucursalUsuario } = req;
     let session = null;
 
     try {
         session = await startSession();
 
-        if (esAdministrador && sucursalUsuario !== sucursal || esVendedor && sucursalUsuario !== sucursal) {
+        if (!esSuperUsuario && sucursalUsuario !== sucursal) {
             return res.status(401).json({
                 ok: false,
                 message: 'Sin las credenciales necesarias para acceder a ésta sucursal'
