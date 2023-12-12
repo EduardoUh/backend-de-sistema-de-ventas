@@ -2,9 +2,6 @@ const { manejarResultados } = require('./generales/manejarResultados.js');
 const { verificarToken } = require('./generales/verificarToken.js');
 const { exponerDatosUsuario } = require('./generales/exponerDatosUsuario.js');
 const { revisarSucursalYaExiste } = require('./revisarRecursoYaExiste/revisarSucursalYaExiste.js');
-const { permitirSuperUsuarios } = require('./permitirSuperUsuarios.js');
-const { permitirSuperUsuariosYAdministradores } = require('./permitirSuperUsuariosYAdministradores.js');
-const { permitirAdministradores } = require('./permitirAdministradores.js');
 const { verificarUsuarioPerteneceSucursal } = require('./sucursales/verificarUsuarioPerteneceSucursal.js');
 const { revisarUsuarioYaExiste } = require('./revisarRecursoYaExiste/revisarUsuarioYaExiste.js');
 const { revisarProveedorYaExiste } = require('./revisarRecursoYaExiste/revisarProveedorYaExiste.js');
@@ -32,9 +29,6 @@ module.exports = {
     verificarToken,
     exponerDatosUsuario,
     revisarSucursalYaExiste,
-    permitirSuperUsuarios,
-    permitirSuperUsuariosYAdministradores,
-    permitirAdministradores,
     verificarUsuarioPerteneceSucursal,
     revisarUsuarioYaExiste,
     revisarProveedorYaExiste,

@@ -200,14 +200,14 @@ module.exports.obtenerSucursalPorId = async (req = request, res = response) => {
 
 module.exports.obtenerSucursales = async (req = request, res = response) => {
     const queryParams = req.query;
-    const { esAdministrador, sucursalUsuario } = req;
+    const { esSuperUsuario, sucursalUsuario } = req;
 
     try {
         const params = filtrarQueryParams(queryParams, ['nombre', 'ciudad', 'direccion', 'email', 'activa', 'creador', 'fechaCreacion', 'ultimoEnModificar', 'fechaUltimaModificacion']);
 
         let sucursales = null;
 
-        if (esAdministrador) {
+        if (!esSuperUsuario) {
             params._id = sucursalUsuario;
             sucursales = await Sucursal.find(params)
                 .populate({
@@ -281,6 +281,106 @@ module.exports.obtenerSucursales = async (req = request, res = response) => {
         res.status(500).json({
             ok: false,
             message: 'Algo salió mal al intentar consultar las sucursales, intente de nuevo y si el fallo persiste contacte al administrador'
+        });
+    }
+}
+
+module.exports.obtenerSucursalesPaginadas = async (req = request, res = response) => {
+    let { page } = req.query;
+    const { esSuperUsuario, sucursalUsuario } = req;
+
+    try {
+        let sucursales = null;
+        let count = 0;
+        const numberPerPage = 10;
+
+        if (!page || page < 0 || !/^\d*$/.test(page)) {
+            page = 0;
+        }
+
+        if (!esSuperUsuario) {
+            sucursales = await Sucursal.find({ _id: sucursalUsuario })
+                .populate({
+                    path: 'creador',
+                    options: {
+                        transform: transformarDatosPopulatedUsuario
+                    },
+                    populate: {
+                        path: 'rol',
+                        options: {
+                            transform: transformarDatosPopulateRol
+                        }
+                    }
+                })
+                .populate({
+                    path: 'ultimoEnModificar',
+                    options: {
+                        transform: transformarDatosPopulatedUsuario
+                    },
+                    populate: {
+                        path: 'rol',
+                        options: {
+                            transform: transformarDatosPopulateRol
+                        }
+                    }
+                });
+        }
+        else {
+            count = await Sucursal.find({}).estimatedDocumentCount();
+
+            if (page > (count / numberPerPage)) {
+                page = 0;
+            }
+
+            sucursales = await Sucursal.find({})
+                .sort({ fechaCreacion: 1 })
+                .skip(page > 0 ? ((page - 1) * numberPerPage) : 0)
+                .limit(numberPerPage)
+                .populate({
+                    path: 'creador',
+                    options: {
+                        transform: transformarDatosPopulatedUsuario
+                    },
+                    populate: {
+                        path: 'rol',
+                        options: {
+                            transform: transformarDatosPopulateRol
+                        }
+                    }
+                })
+                .populate({
+                    path: 'ultimoEnModificar',
+                    options: {
+                        transform: transformarDatosPopulatedUsuario
+                    },
+                    populate: {
+                        path: 'rol',
+                        options: {
+                            transform: transformarDatosPopulateRol
+                        }
+                    }
+                });
+        }
+
+        if (sucursales.length === 0) {
+            return res.status(404).json({
+                ok: false,
+                message: 'No se encontraron registros'
+            });
+        }
+
+        res.status(200).json({
+            ok: true,
+            count: esSuperUsuario ? count : 1,
+            sucursales
+        });
+
+    } catch (error) {
+        console.log(error);
+
+        res.status(500).json({
+            ok: false,
+            message: 'Algo salió mal al consultar los registros, intente de nuevo y si el fallo persiste contacte al administrador'
         });
     }
 }
