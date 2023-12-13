@@ -3,6 +3,7 @@ const { startSession } = require('mongoose');
 const { Usuario, Rol, Sucursal } = require('../models/index.js');
 const { hash, compare } = require('bcrypt');
 const { transformarDatosPopulateRol, transformarDatosPopulatedSucursal, transformarDatosPopulatedUsuario, filtrarQueryParams } = require('../helpers/index.js');
+const { param } = require('express-validator');
 
 
 module.exports.crearUsuario = async (req = request, res = response) => {
@@ -330,6 +331,9 @@ module.exports.actualizarOtrosPerfiles = async (req = request, res = response) =
 module.exports.obtenerUsuarios = async (req = request, res = response) => {
     const { esSuperUsuario, sucursalUsuario } = req;
     const queryParameters = req.query;
+    let count = 0;
+    let numberPerPage = 10;
+    let page = 1;
 
     try {
         const params = filtrarQueryParams(queryParameters, [
@@ -346,7 +350,8 @@ module.exports.obtenerUsuarios = async (req = request, res = response) => {
             'creador',
             'fechaCreacion',
             'ultimoEnModificar',
-            'fechaUltimaModificacion'
+            'fechaUltimaModificacion',
+            'page'
         ]);
 
         if (!esSuperUsuario && params?.sucursal && params?.sucursal !== sucursalUsuario) {
@@ -360,7 +365,23 @@ module.exports.obtenerUsuarios = async (req = request, res = response) => {
             params.sucursal = sucursalUsuario;
         }
 
+        if (params.page) {
+            page = params.page;
+            delete params.page;
+        }
+
+        count = await Usuario.find(params).countDocuments();
+
+        const pagesCanBeGenerated = Math.ceil((count / numberPerPage));
+
+        if (!/^\d*$/.test(page) || page < 1 || page > pagesCanBeGenerated) {
+            page = 1;
+        }
+
         const usuarios = await Usuario.find(params)
+            .sort({ fechaCreacion: 1 })
+            .skip(((page - 1) * numberPerPage))
+            .limit(numberPerPage)
             .select('-password')
             .populate({
                 path: 'rol',
@@ -408,6 +429,7 @@ module.exports.obtenerUsuarios = async (req = request, res = response) => {
 
         res.status(200).json({
             ok: true,
+            count,
             usuarios
         });
 
