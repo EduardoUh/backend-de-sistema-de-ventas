@@ -249,7 +249,7 @@ module.exports.obtenerSucursales = async (req = request, res = response) => {
 
             count = await Sucursal.find(params).countDocuments();
 
-            if (page > (count / numberPerPage)) {
+            if ((page - (count % numberPerPage)) > (count / numberPerPage)) {
                 page = 1;
             }
 
