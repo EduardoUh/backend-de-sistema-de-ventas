@@ -124,6 +124,8 @@ module.exports.crearVenta = async (req = request, res = response) => {
 module.exports.obtenerVentas = async (req = request, res = response) => {
     const queryParams = req.query;
     const { esSuperUsuario, sucursalUsuario } = req;
+    const numberPerPage = 10;
+    let page = 1;
 
     try {
         if (!esSuperUsuario && queryParams?.sucursal && queryParams.sucursal !== sucursalUsuario) {
@@ -133,13 +135,29 @@ module.exports.obtenerVentas = async (req = request, res = response) => {
             });
         }
 
-        const params = filtrarQueryParams(queryParams, ['sucursal', 'creador', 'cliente', 'saldada', 'fechaCreacion']);
+        const params = filtrarQueryParams(queryParams, ['sucursal', 'creador', 'cliente', 'saldada', 'fechaCreacion', 'page']);
 
         if (!esSuperUsuario) {
             params.sucursal = sucursalUsuario;
         }
 
+        if (params.page) {
+            page = params.page;
+            delete params.page;
+        }
+
+        const count = await Venta.find(params).countDocuments();
+
+        const pagesCanBeGenerated = Math.ceil((count / numberPerPage));
+
+        if (!/^\d*$/.test(page) || page < 1 || page > pagesCanBeGenerated) {
+            page = 1;
+        }
+
         const ventas = await Venta.find(params)
+            .sort({ fechaCreacion: 1 })
+            .skip(((page - 1) * numberPerPage))
+            .limit(numberPerPage)
             .populate({
                 path: 'sucursal',
                 options: {
@@ -180,6 +198,8 @@ module.exports.obtenerVentas = async (req = request, res = response) => {
 
         res.status(200).json({
             ok: true,
+            count,
+            pagesCanBeGenerated,
             ventas
         })
 
