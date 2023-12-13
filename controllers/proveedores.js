@@ -168,11 +168,29 @@ module.exports.actualizarProveedor = async (req = request, res = response) => {
 
 module.exports.obtenerProveedores = async (req = request, res = response) => {
     const queryParams = req.query;
+    let page = 1;
+    const numberPerPage = 10;
 
     try {
-        const params = filtrarQueryParams(queryParams, ['nombre', 'direccion', 'numTelefono', 'email', 'rfc', 'activo', 'creador', 'ultimoEnModificar', 'fechaCreacion', 'fechaUltimaModificacion']);
+        const params = filtrarQueryParams(queryParams, ['nombre', 'direccion', 'numTelefono', 'email', 'rfc', 'activo', 'creador', 'ultimoEnModificar', 'fechaCreacion', 'fechaUltimaModificacion', 'page']);
+
+        if (params.page) {
+            page = params.page;
+            delete params.page;
+        }
+
+        const count = await Proveedor.find(params).countDocuments();
+
+        const pagesCanBeGenerated = Math.ceil((count / numberPerPage));
+
+        if (!/^\d*$/.test(page) || page < 1 || page > pagesCanBeGenerated) {
+            page = 1;
+        }
 
         const proveedores = await Proveedor.find(params)
+            .sort({fechaCreacion: 1})
+            .skip(((page - 1) * numberPerPage))
+            .limit(numberPerPage)
             .populate({
                 path: 'creador',
                 options: {
@@ -207,6 +225,7 @@ module.exports.obtenerProveedores = async (req = request, res = response) => {
 
         res.status(200).json({
             ok: true,
+            count,
             proveedores
         });
 
