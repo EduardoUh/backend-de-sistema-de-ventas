@@ -203,8 +203,8 @@ module.exports.obtenerSucursales = async (req = request, res = response) => {
     const { esSuperUsuario, sucursalUsuario } = req;
     let sucursales = null;
     const numberPerPage = 10;
-    let count = null;
-    let page = null;
+    let count = 0;
+    let page = 1;
 
     try {
         const params = filtrarQueryParams(queryParams, ['nombre', 'ciudad', 'direccion', 'email', 'activa', 'creador', 'fechaCreacion', 'ultimoEnModificar', 'fechaUltimaModificacion', 'page']);
@@ -243,13 +243,15 @@ module.exports.obtenerSucursales = async (req = request, res = response) => {
                 });
         }
         else {
-            if (!page || page < 0 || !/^\d*$/.test(page)) {
+            if (!page || page < 1 || !/^\d*$/.test(page)) {
                 page = 1;
             }
 
             count = await Sucursal.find(params).countDocuments();
 
-            if ((page - (count % numberPerPage)) > (count / numberPerPage)) {
+            const pagesCanBeGenerated = Math.ceil((count / numberPerPage));
+
+            if (page > pagesCanBeGenerated) {
                 page = 1;
             }
 
