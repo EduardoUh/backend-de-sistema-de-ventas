@@ -201,11 +201,18 @@ module.exports.obtenerSucursalPorId = async (req = request, res = response) => {
 module.exports.obtenerSucursales = async (req = request, res = response) => {
     const queryParams = req.query;
     const { esSuperUsuario, sucursalUsuario } = req;
+    let sucursales = null;
+    const numberPerPage = 10;
+    let count = null;
+    let page = null;
 
     try {
-        const params = filtrarQueryParams(queryParams, ['nombre', 'ciudad', 'direccion', 'email', 'activa', 'creador', 'fechaCreacion', 'ultimoEnModificar', 'fechaUltimaModificacion']);
+        const params = filtrarQueryParams(queryParams, ['nombre', 'ciudad', 'direccion', 'email', 'activa', 'creador', 'fechaCreacion', 'ultimoEnModificar', 'fechaUltimaModificacion', 'page']);
 
-        let sucursales = null;
+        if (params.page) {
+            page = params.page;
+            delete params.page;
+        }
 
         if (!esSuperUsuario) {
             params._id = sucursalUsuario;
@@ -236,105 +243,19 @@ module.exports.obtenerSucursales = async (req = request, res = response) => {
                 });
         }
         else {
-            sucursales = await Sucursal.find(params)
-                .populate({
-                    path: 'creador',
-                    options: {
-                        transform: transformarDatosPopulatedUsuario
-                    },
-                    populate: {
-                        path: 'rol',
-                        options: {
-                            transform: transformarDatosPopulateRol
-                        }
-                    }
-                })
-                .populate({
-                    path: 'ultimoEnModificar',
-                    options: {
-                        transform: transformarDatosPopulatedUsuario
-                    },
-                    populate: {
-                        path: 'rol',
-                        options: {
-                            transform: transformarDatosPopulateRol
-                        }
-                    }
-                });
-        }
-
-        if (sucursales.length === 0) {
-            return res.status(404).json({
-                ok: false,
-                message: 'No se encontraron registros'
-            });
-        }
-
-        res.status(200).json({
-            ok: true,
-            sucursales
-        });
-
-    } catch (error) {
-        console.log(error);
-
-        res.status(500).json({
-            ok: false,
-            message: 'Algo salió mal al intentar consultar las sucursales, intente de nuevo y si el fallo persiste contacte al administrador'
-        });
-    }
-}
-
-module.exports.obtenerSucursalesPaginadas = async (req = request, res = response) => {
-    let { page } = req.query;
-    const { esSuperUsuario, sucursalUsuario } = req;
-
-    try {
-        let sucursales = null;
-        let count = 0;
-        const numberPerPage = 10;
-
-        if (!page || page < 0 || !/^\d*$/.test(page)) {
-            page = 0;
-        }
-
-        if (!esSuperUsuario) {
-            sucursales = await Sucursal.find({ _id: sucursalUsuario })
-                .populate({
-                    path: 'creador',
-                    options: {
-                        transform: transformarDatosPopulatedUsuario
-                    },
-                    populate: {
-                        path: 'rol',
-                        options: {
-                            transform: transformarDatosPopulateRol
-                        }
-                    }
-                })
-                .populate({
-                    path: 'ultimoEnModificar',
-                    options: {
-                        transform: transformarDatosPopulatedUsuario
-                    },
-                    populate: {
-                        path: 'rol',
-                        options: {
-                            transform: transformarDatosPopulateRol
-                        }
-                    }
-                });
-        }
-        else {
-            count = await Sucursal.find({}).estimatedDocumentCount();
-
-            if (page > (count / numberPerPage)) {
-                page = 0;
+            if (!page || page < 0 || !/^\d*$/.test(page)) {
+                page = 1;
             }
 
-            sucursales = await Sucursal.find({})
+            count = await Sucursal.find(params).countDocuments();
+
+            if (page > (count / numberPerPage)) {
+                page = 1;
+            }
+
+            sucursales = await Sucursal.find(params)
                 .sort({ fechaCreacion: 1 })
-                .skip(page > 0 ? ((page - 1) * numberPerPage) : 0)
+                .skip(((page - 1) * numberPerPage))
                 .limit(numberPerPage)
                 .populate({
                     path: 'creador',
@@ -380,7 +301,7 @@ module.exports.obtenerSucursalesPaginadas = async (req = request, res = response
 
         res.status(500).json({
             ok: false,
-            message: 'Algo salió mal al consultar los registros, intente de nuevo y si el fallo persiste contacte al administrador'
+            message: 'Algo salió mal al intentar consultar las sucursales, intente de nuevo y si el fallo persiste contacte al administrador'
         });
     }
 }
