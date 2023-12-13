@@ -183,11 +183,29 @@ module.exports.actualizarProducto = async (req = request, res = response) => {
 
 module.exports.obtenerProductos = async (req = request, res = response) => {
     const queryParams = req.query;
+    let page = 1;
+    const numberPerPage = 10;
 
     try {
-        const params = filtrarQueryParams(queryParams, ['nombre', 'tipoProducto', 'proveedor', 'ventaPor', 'activo', 'creador', 'fechaCreacion', 'ultimoEnModificar', 'fechaUltimaModificaion']);
+        const params = filtrarQueryParams(queryParams, ['nombre', 'tipoProducto', 'proveedor', 'ventaPor', 'activo', 'creador', 'fechaCreacion', 'ultimoEnModificar', 'fechaUltimaModificaion', 'page']);
+
+        if (params.page) {
+            page = params.page;
+            delete params.page;
+        }
+
+        const count = await Producto.find(params).countDocuments();
+
+        const pagesCanBeGenerated = Math.ceil((count / numberPerPage));
+
+        if (!/^\d*$/.test(page) || page < 1 || page > pagesCanBeGenerated) {
+            page = 1;
+        }
 
         const productos = await Producto.find(params)
+            .sort({ fechaCreacion: 1 })
+            .skip(((page - 1) * numberPerPage))
+            .limit(numberPerPage)
             .populate({
                 path: 'tipoProducto',
                 options: {
@@ -234,6 +252,8 @@ module.exports.obtenerProductos = async (req = request, res = response) => {
 
         res.status(200).json({
             ok: true,
+            count,
+            pagesCanBeGenerated,
             productos
         });
 
