@@ -205,6 +205,7 @@ module.exports.obtenerSucursales = async (req = request, res = response) => {
     const numberPerPage = 10;
     let count = 0;
     let page = 1;
+    let pagesCanBeGenerated = 0;
 
     try {
         const params = filtrarQueryParams(queryParams, ['nombre', 'ciudad', 'direccion', 'email', 'activa', 'creador', 'fechaCreacion', 'ultimoEnModificar', 'fechaUltimaModificacion', 'page']);
@@ -249,7 +250,7 @@ module.exports.obtenerSucursales = async (req = request, res = response) => {
 
             count = await Sucursal.find(params).countDocuments();
 
-            const pagesCanBeGenerated = Math.ceil((count / numberPerPage));
+            pagesCanBeGenerated = Math.ceil((count / numberPerPage));
 
             if (page > pagesCanBeGenerated) {
                 page = 1;
@@ -295,6 +296,7 @@ module.exports.obtenerSucursales = async (req = request, res = response) => {
         res.status(200).json({
             ok: true,
             count: esSuperUsuario ? count : 1,
+            pagesCanBeGenerated,
             sucursales
         });
 
