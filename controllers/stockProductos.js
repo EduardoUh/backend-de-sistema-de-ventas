@@ -226,10 +226,11 @@ module.exports.actualizarStock = async (req = request, res = response) => {
 module.exports.obtenerResgistrosStock = async (req = request, res = response) => {
     const queryParams = req.query;
     const { esSuperUsuario, sucursalUsuario } = req;
+    let stockProductos;
+    const numberPerPage = 10;
+    let page = 1;
 
     try {
-        let stockProductos;
-
         if (!esSuperUsuario && queryParams.sucursal && queryParams.sucursal !== sucursalUsuario) {
             return res.status(401).json({
                 ok: false,
@@ -237,90 +238,65 @@ module.exports.obtenerResgistrosStock = async (req = request, res = response) =>
             });
         }
 
+        const params = filtrarQueryParams(queryParams, ['producto', 'sucursal', 'existencia', 'precio', 'creador', 'fechaCreacion', 'ultimoEnModificar', 'fechaUltimaModificacion', 'page']);
+
         if (!esSuperUsuario) {
-            const params = filtrarQueryParams(queryParams, ['producto', 'existencia', 'precio', 'creador', 'fechaCreacion', 'ultimoEnModificar', 'fechaUltimaModificacion']);
-
             params.sucursal = sucursalUsuario;
-
-            stockProductos = await StockProductos.find(params)
-                .populate({
-                    path: 'producto',
-                    options: {
-                        transform: transformarDatosPopulatedProducto
-                    }
-                })
-                .populate({
-                    path: 'sucursal',
-                    options: {
-                        transform: transformarDatosPopulatedSucursal
-                    }
-                })
-                .populate({
-                    path: 'creador',
-                    options: {
-                        transform: transformarDatosPopulatedUsuario
-                    },
-                    populate: {
-                        path: 'rol',
-                        options: {
-                            transform: transformarDatosPopulateRol
-                        }
-                    }
-                })
-                .populate({
-                    path: 'ultimoEnModificar',
-                    options: {
-                        transform: transformarDatosPopulatedUsuario
-                    },
-                    populate: {
-                        path: 'rol',
-                        options: {
-                            transform: transformarDatosPopulateRol
-                        }
-                    }
-                });
         }
-        else {
-            const params = filtrarQueryParams(queryParams, ['producto', 'sucursal', 'existencia', 'precio', 'creador', 'fechaCreacion', 'ultimoEnModificar', 'fechaUltimaModificacion']);
 
-            stockProductos = await StockProductos.find(params)
-                .populate({
-                    path: 'producto',
-                    options: {
-                        transform: transformarDatosPopulatedProducto
-                    }
-                })
-                .populate({
-                    path: 'sucursal',
-                    options: {
-                        transform: transformarDatosPopulatedSucursal
-                    }
-                })
-                .populate({
-                    path: 'creador',
-                    options: {
-                        transform: transformarDatosPopulatedUsuario
-                    },
-                    populate: {
-                        path: 'rol',
-                        options: {
-                            transform: transformarDatosPopulateRol
-                        }
-                    }
-                })
-                .populate({
-                    path: 'ultimoEnModificar',
-                    options: {
-                        transform: transformarDatosPopulatedUsuario
-                    },
-                    populate: {
-                        path: 'rol',
-                        options: {
-                            transform: transformarDatosPopulateRol
-                        }
-                    }
-                });
+        if (params.page) {
+            page = params.page;
+            delete params.page;
         }
+
+        const count = await StockProductos.find(params).countDocuments();
+
+        const pagesCanBeGenerated = Math.ceil((count / numberPerPage));
+
+        if (!/^\d*$/.test(page) || page < 1 || page > pagesCanBeGenerated) {
+            page = 1;
+        }
+
+        stockProductos = await StockProductos.find(params)
+            .sort({ fechaCreacion: 1 })
+            .skip(((page - 1) * numberPerPage))
+            .limit(numberPerPage)
+            .populate({
+                path: 'producto',
+                options: {
+                    transform: transformarDatosPopulatedProducto
+                }
+            })
+            .populate({
+                path: 'sucursal',
+                options: {
+                    transform: transformarDatosPopulatedSucursal
+                }
+            })
+            .populate({
+                path: 'creador',
+                options: {
+                    transform: transformarDatosPopulatedUsuario
+                },
+                populate: {
+                    path: 'rol',
+                    options: {
+                        transform: transformarDatosPopulateRol
+                    }
+                }
+            })
+            .populate({
+                path: 'ultimoEnModificar',
+                options: {
+                    transform: transformarDatosPopulatedUsuario
+                },
+                populate: {
+                    path: 'rol',
+                    options: {
+                        transform: transformarDatosPopulateRol
+                    }
+                }
+            });
 
         if (stockProductos.length === 0) {
             return res.status(404).json({
@@ -331,6 +307,8 @@ module.exports.obtenerResgistrosStock = async (req = request, res = response) =>
 
         res.status(200).json({
             ok: true,
+            count,
+            pagesCanBeGenerated,
             stockProductos
         });
 
@@ -347,6 +325,8 @@ module.exports.obtenerResgistrosStock = async (req = request, res = response) =>
 module.exports.obtenerResgistrosStockParaVenta = async (req = request, res = response) => {
     const { id: sucursalId } = req.params;
     const { esSuperUsuario, sucursalUsuario } = req;
+    const numberPerPage = 10;
+    let { page } = req.query;
 
     try {
         if (!esSuperUsuario && sucursalUsuario !== sucursalId) {
@@ -356,7 +336,18 @@ module.exports.obtenerResgistrosStockParaVenta = async (req = request, res = res
             });
         }
 
+        const count = await StockProductos.find({ sucursal: sucursalId, existencia: { $gt: 0 } }).countDocuments();
+
+        const pagesCanBeGenerated = Math.ceil((count / numberPerPage));
+
+        if (!/^\d*$/.test(page) || page < 1 || page > pagesCanBeGenerated) {
+            page = 1;
+        }
+
         let stockProductos = await StockProductos.find({ sucursal: sucursalId, existencia: { $gt: 0 } })
+            .sort({ fechaCreacion: 1 })
+            .skip(((page - 1) * numberPerPage))
+            .limit(numberPerPage)
             .select('-creador -fechaCreacion -ultimoEnModificar -fechaUltimaModificacion')
             .populate({
                 path: 'producto',
@@ -382,6 +373,8 @@ module.exports.obtenerResgistrosStockParaVenta = async (req = request, res = res
 
         res.status(200).json({
             ok: true,
+            count,
+            pagesCanBeGenerated,
             stockProductos
         });
 
