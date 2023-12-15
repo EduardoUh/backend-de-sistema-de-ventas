@@ -1,6 +1,6 @@
 const express = require('express');
 const { body, param } = require('express-validator');
-const { verificarToken, exponerDatosUsuario, manejarResultados } = require('../middlewares/index.js');
+const { verificarToken, exponerDatosUsuario, verificarPermisosModuloPagos, manejarResultados } = require('../middlewares/index.js');
 const { crearPago, ObtenerPagosPorVenta } = require('../controllers/pagos.js');
 
 
@@ -30,6 +30,7 @@ const validadorIdParam = () => param('id')
 pagosRouter.post('/pagos',
     verificarToken,
     exponerDatosUsuario,
+    verificarPermisosModuloPagos,
     [
         validadorBodyId('venta'),
         validadorCantidad('pagoCon', 0.01),
@@ -44,6 +45,7 @@ pagosRouter.post('/pagos',
 pagosRouter.get('/pagos/venta/:id',
     verificarToken,
     exponerDatosUsuario,
+    verificarPermisosModuloPagos,
     validadorIdParam(),
     manejarResultados,
     ObtenerPagosPorVenta

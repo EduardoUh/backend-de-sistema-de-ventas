@@ -6,13 +6,13 @@ const { Compra, Sucursal, Proveedor, Producto, StockProductos } = require('../mo
 
 module.exports.crearCompra = async (req = request, res = response) => {
     const { sucursal, proveedor, articulos, total } = req.body;
-    const { uId, esAdministrador, esVendedor, sucursalUsuario } = req;
+    const { uId, esSuperUsuario, sucursalUsuario } = req;
     let session = null;
 
     try {
         session = await startSession();
 
-        if (esAdministrador && sucursalUsuario !== sucursal || esVendedor && sucursalUsuario !== sucursal) {
+        if (!esSuperUsuario && sucursalUsuario !== sucursal) {
             return res.status(401).json({
                 ok: false,
                 message: 'Sin acceso a ésa sucursal'
@@ -111,87 +111,71 @@ module.exports.crearCompra = async (req = request, res = response) => {
 
 module.exports.obtenerCompras = async (req = request, res = response) => {
     const queryParams = req.query;
-    const { esAdministrador, sucursalUsuario } = req;
+    const { esSuperUsuario, sucursalUsuario } = req;
+    const numberPerPage = 10;
+    let page = 1;
 
     try {
-        if (esAdministrador && queryParams.sucursal && queryParams.sucursal !== sucursalUsuario) {
+        if (!esSuperUsuario && queryParams.sucursal && queryParams.sucursal !== sucursalUsuario) {
             return res.status(401).json({
                 ok: false,
                 message: 'Sin acceso a ésa sucursal'
             });
         }
 
-        let compras = null;
-        const params = filtrarQueryParams(queryParams, ['sucursal', 'proveedor', 'creador', 'fechaCreacion']);
+        const params = filtrarQueryParams(queryParams, ['sucursal', 'proveedor', 'creador', 'fechaCreacion', 'page']);
 
-        if (esAdministrador) {
+        if (!esSuperUsuario) {
             params.sucursal = sucursalUsuario;
+        }
 
-            compras = await Compra.find(params)
-                .populate({
-                    path: 'sucursal',
-                    options: {
-                        transform: transformarDatosPopulatedSucursal
-                    }
-                })
-                .populate({
-                    path: 'proveedor',
-                    options: {
-                        transform: transformarDatosPopulatedProveedor
-                    }
-                })
-                .populate({
-                    path: 'creador',
-                    options: {
-                        transform: transformarDatosPopulatedUsuario
-                    },
-                    populate: {
-                        path: 'rol',
-                        options: {
-                            transform: transformarDatosPopulateRol
-                        }
-                    }
-                })
-                .populate({
-                    path: 'articulos.producto',
-                    options: {
-                        transform: transformarDatosPopulatedProducto
-                    }
-                });
+        if (params.page) {
+            page = params.page;
+            delete params.page;
         }
-        else {
-            compras = await Compra.find(params)
-                .populate({
-                    path: 'sucursal',
-                    options: {
-                        transform: transformarDatosPopulatedSucursal
-                    }
-                })
-                .populate({
-                    path: 'proveedor',
-                    options: {
-                        transform: transformarDatosPopulatedProveedor
-                    }
-                })
-                .populate({
-                    path: 'creador',
-                    options: {
-                        transform: transformarDatosPopulatedUsuario
-                    },
-                    populate: {
-                        path: 'rol',
-                        options: {
-                            transform: transformarDatosPopulateRol
-                        }
-                    }
-                })
-                .populate({
-                    path: 'articulos.producto',
-                    options: {
-                        transform: transformarDatosPopulatedProducto
-                    }
-                });
+
+        const count = await Compra.find(params).countDocuments();
+
+        const pagesCanBeGenerated = Math.ceil((count / numberPerPage));
+
+        if (!/^\d*$/.test(page) || page < 1 || page > pagesCanBeGenerated) {
+            page = 1;
         }
+
+        const compras = await Compra.find(params)
+            .sort({ fechaCreacion: 1 })
+            .skip(((page - 1) * numberPerPage))
+            .limit(numberPerPage)
+            .populate({
+                path: 'sucursal',
+                options: {
+                    transform: transformarDatosPopulatedSucursal
+                }
+            })
+            .populate({
+                path: 'proveedor',
+                options: {
+                    transform: transformarDatosPopulatedProveedor
+                }
+            })
+            .populate({
+                path: 'creador',
+                options: {
+                    transform: transformarDatosPopulatedUsuario
+                },
+                populate: {
+                    path: 'rol',
+                    options: {
+                        transform: transformarDatosPopulateRol
+                    }
+                }
+            })
+            .populate({
+                path: 'articulos.producto',
+                options: {
+                    transform: transformarDatosPopulatedProducto
+                }
+            });
 
         if (compras.length === 0) {
             return res.status(404).json({
@@ -202,6 +186,8 @@ module.exports.obtenerCompras = async (req = request, res = response) => {
 
         res.status(200).json({
             ok: true,
+            count,
+            pagesCanBeGenerated,
             compras
         });
 
@@ -217,7 +203,7 @@ module.exports.obtenerCompras = async (req = request, res = response) => {
 
 module.exports.obtenerCompra = async (req = request, res = response) => {
     const { id: compraId } = req.params;
-    const { esAdministrador, sucursalUsuario } = req;
+    const { esSuperUsuario, sucursalUsuario } = req;
 
     try {
         const compra = await Compra.findById(compraId)
@@ -259,7 +245,7 @@ module.exports.obtenerCompra = async (req = request, res = response) => {
             });
         }
 
-        if (esAdministrador && sucursalUsuario !== compra.sucursal.id.toHexString()) {
+        if (!esSuperUsuario && sucursalUsuario !== compra.sucursal.id.toHexString()) {
             return res.status(401).json({
                 ok: false,
                 message: 'Sin acceso a ésa sucursal'

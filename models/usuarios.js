@@ -63,6 +63,31 @@ const usuarioSchema = new Schema({
         required: true,
         default: true
     },
+    modulos: [{
+        nombre: {
+            type: String,
+            uppercase: true,
+            trim: true,
+            required: true
+        },
+        componente: {
+            type: String,
+            trim: true,
+            required: true
+        },
+        ruta: {
+            type: String,
+            lowercase: true,
+            trim: true,
+            required: true
+        },
+        permisos: [{
+            type: String,
+            uppercase: true,
+            trim: true,
+            required: true
+        }]
+    }],
     creador: {
         type: Schema.Types.ObjectId,
         ref: 'Usuarios'

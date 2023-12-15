@@ -158,11 +158,29 @@ module.exports.actualizarTipoProducto = async (req = request, res = response) =>
 
 module.exports.obtenerTiposProductos = async (req = request, res = response) => {
     const queryParams = req.query;
+    let page = 1;
+    const numberPerPage = 10;
 
     try {
-        const params = filtrarQueryParams(queryParams, ['tipoProducto', 'descripcion', 'activo']);
+        const params = filtrarQueryParams(queryParams, ['tipoProducto', 'descripcion', 'activo', 'page']);
 
-        const tiposProductos = await TipoProducto.find(params);
+        if (params.page) {
+            page = params.page;
+            delete params.page;
+        }
+
+        const count = await TipoProducto.find(params).countDocuments();
+
+        const pagesCanBeGenerated = Math.ceil((count / numberPerPage));
+
+        if (!/^\d*$/.test(page) || page < 1 || page > pagesCanBeGenerated) {
+            page = 1;
+        }
+
+        const tiposProductos = await TipoProducto.find(params)
+            .sort({ fechaCreacion: 1 })
+            .skip(((page - 1) * numberPerPage))
+            .limit(numberPerPage);
 
         if (tiposProductos.length === 0) {
             return res.status(404).json({
@@ -173,6 +191,8 @@ module.exports.obtenerTiposProductos = async (req = request, res = response) => 
 
         res.status(200).json({
             ok: true,
+            count,
+            pagesCanBeGenerated,
             tiposProductos
         });
 

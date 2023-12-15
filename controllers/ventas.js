@@ -6,13 +6,13 @@ const { Venta, Pago, Sucursal, Cliente, Producto, StockProductos } = require('..
 
 module.exports.crearVenta = async (req = request, res = response) => {
     const { sucursal, cliente, articulos, total, pagoCon, pago, cambio, saldo } = req.body;
-    const { uId, esAdministrador, esVendedor, sucursalUsuario } = req;
+    const { uId, esSuperUsuario, sucursalUsuario } = req;
     let session = null;
 
     try {
         session = await startSession();
 
-        if (esAdministrador && sucursalUsuario !== sucursal || esVendedor && sucursalUsuario !== sucursal) {
+        if (!esSuperUsuario && sucursalUsuario !== sucursal) {
             return res.status(401).json({
                 ok: false,
                 message: 'Sin las credenciales necesarias para acceder a ésta sucursal'
@@ -123,23 +123,41 @@ module.exports.crearVenta = async (req = request, res = response) => {
 
 module.exports.obtenerVentas = async (req = request, res = response) => {
     const queryParams = req.query;
-    const { esAdministrador, esVendedor, sucursalUsuario } = req;
+    const { esSuperUsuario, sucursalUsuario } = req;
+    const numberPerPage = 10;
+    let page = 1;
 
     try {
-        if (esAdministrador && queryParams?.sucursal && queryParams.sucursal !== sucursalUsuario) {
+        if (!esSuperUsuario && queryParams?.sucursal && queryParams.sucursal !== sucursalUsuario) {
             return res.status(401).json({
                 ok: false,
                 message: 'Sin acceso a ésa sucursal'
             });
         }
 
-        const params = filtrarQueryParams(queryParams, ['sucursal', 'creador', 'cliente', 'saldada', 'fechaCreacion']);
+        const params = filtrarQueryParams(queryParams, ['sucursal', 'creador', 'cliente', 'saldada', 'fechaCreacion', 'page']);
 
-        if (esAdministrador || esVendedor) {
+        if (!esSuperUsuario) {
             params.sucursal = sucursalUsuario;
         }
 
+        if (params.page) {
+            page = params.page;
+            delete params.page;
+        }
+
+        const count = await Venta.find(params).countDocuments();
+
+        const pagesCanBeGenerated = Math.ceil((count / numberPerPage));
+
+        if (!/^\d*$/.test(page) || page < 1 || page > pagesCanBeGenerated) {
+            page = 1;
+        }
+
         const ventas = await Venta.find(params)
+            .sort({ fechaCreacion: 1 })
+            .skip(((page - 1) * numberPerPage))
+            .limit(numberPerPage)
             .populate({
                 path: 'sucursal',
                 options: {
@@ -180,6 +198,8 @@ module.exports.obtenerVentas = async (req = request, res = response) => {
 
         res.status(200).json({
             ok: true,
+            count,
+            pagesCanBeGenerated,
             ventas
         })
 
@@ -195,7 +215,7 @@ module.exports.obtenerVentas = async (req = request, res = response) => {
 
 module.exports.obtenerVenta = async (req = request, res = response) => {
     const { id: ventaId } = req.params;
-    const { esAdministrador, esVendedor, sucursalUsuario } = req;
+    const { esSuperUsuario, sucursalUsuario } = req;
 
     try {
         const venta = await Venta.findById(ventaId)
@@ -237,7 +257,7 @@ module.exports.obtenerVenta = async (req = request, res = response) => {
             });
         }
 
-        if (esAdministrador && sucursalUsuario !== venta.sucursal.id.toHexString() || esVendedor && sucursalUsuario !== venta.sucursal.id.toHexString()) {
+        if (!esSuperUsuario && sucursalUsuario !== venta.sucursal.id.toHexString()) {
             return res.status(401).json({
                 ok: false,
                 message: 'Sin acceso a ésa sucursal'

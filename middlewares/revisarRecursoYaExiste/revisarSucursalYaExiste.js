@@ -1,5 +1,5 @@
 const { request, response } = require('express');
-const { Sucursal } = require('../models/index.js');
+const { Sucursal } = require('../../models/index.js');
 
 
 module.exports.revisarSucursalYaExiste = async (req = request, res = response, next) => {

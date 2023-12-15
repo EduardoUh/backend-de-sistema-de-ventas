@@ -3,10 +3,11 @@ const { startSession } = require('mongoose');
 const { Usuario, Rol, Sucursal } = require('../models/index.js');
 const { hash, compare } = require('bcrypt');
 const { transformarDatosPopulateRol, transformarDatosPopulatedSucursal, transformarDatosPopulatedUsuario, filtrarQueryParams } = require('../helpers/index.js');
+const { param } = require('express-validator');
 
 
 module.exports.crearUsuario = async (req = request, res = response) => {
-    const { body, esAdministrador, sucursalUsuario } = req;
+    const { body, esSuperUsuario, sucursalUsuario } = req;
     const { uId } = req;
     let session = null;
 
@@ -35,7 +36,7 @@ module.exports.crearUsuario = async (req = request, res = response) => {
             });
         }
 
-        if (esAdministrador && rol.rol !== 'VENDEDOR') {
+        if (!esSuperUsuario && rol.rol !== 'VENDEDOR') {
             return res.status(401).json({
                 ok: false,
                 message: 'Sin las credenciales necesarias para crear un usuario de ése tipo'
@@ -49,7 +50,7 @@ module.exports.crearUsuario = async (req = request, res = response) => {
             });
         }
 
-        if (esAdministrador && sucursal.id !== sucursalUsuario) {
+        if (!esSuperUsuario && sucursal.id !== sucursalUsuario) {
             return res.status(401).json({
                 ok: false,
                 message: 'Sin las credenciales necesarias para asignar ésa sucursal'
@@ -189,16 +190,23 @@ module.exports.actualizarMiPerfil = async (req = request, res = response) => {
 }
 
 module.exports.actualizarOtrosPerfiles = async (req = request, res = response) => {
-    const { nombres, apellidoPaterno, apellidoMaterno, rfc, rol, sucursal, email, password, direccion, numTelefono, activo } = req.body;
+    const { nombres, apellidoPaterno, apellidoMaterno, rfc, rol, sucursal, email, password, direccion, numTelefono, activo, modulos } = req.body;
     const { id: usuarioId } = req.params;
-    const { uId, esAdministrador, sucursalUsuario } = req;
+    const { uId, esSuperUsuario, sucursalUsuario } = req;
     let session = null;
     let hashedPassword = null;
 
     try {
         session = await startSession();
 
-        if (esAdministrador && sucursalUsuario !== sucursal) {
+        if (uId === usuarioId) {
+            return res.status(401).json({
+                ok: false,
+                message: 'Para actualizar su perfil, diríjase al módulo de perfil'
+            });
+        }
+
+        if (!esSuperUsuario && sucursalUsuario !== sucursal) {
             return res.status(401).json({
                 ok: false,
                 message: 'Sin las credenciales para asignar ésa sucursal'
@@ -221,14 +229,14 @@ module.exports.actualizarOtrosPerfiles = async (req = request, res = response) =
             });
         }
 
-        if (esAdministrador && usuario.rol.rol !== 'VENDEDOR' || esAdministrador && usuario.sucursal.toHexString() !== sucursalUsuario) {
+        if (!esSuperUsuario && usuario.rol.rol !== 'VENDEDOR' || !esSuperUsuario && usuario.sucursal.toHexString() !== sucursalUsuario) {
             return res.status(401).json({
                 ok: false,
                 message: 'Sin las credenciales necesarias para actualizar ése usuario'
             });
         }
 
-        if (esAdministrador && rolDb.rol !== 'VENDEDOR') {
+        if (!esSuperUsuario && rolDb.rol !== 'VENDEDOR') {
             return res.status(401).json({
                 ok: false,
                 message: 'Sin las credenciales necesarias para asignar ése rol'
@@ -251,7 +259,7 @@ module.exports.actualizarOtrosPerfiles = async (req = request, res = response) =
 
         session.startTransaction();
 
-        await usuario.updateOne({ nombres, apellidoPaterno, apellidoMaterno, rfc, rol, sucursal: rolDb.rol === 'SUPER USUARIO' ? null : sucursal, email, password: hashedPassword, direccion, numTelefono, activo, ultimoEnModificar: uId, fechaUltimaModificacion: Date.now() })
+        await usuario.updateOne({ nombres, apellidoPaterno, apellidoMaterno, rfc, rol, sucursal: rolDb.rol === 'SUPER USUARIO' ? null : sucursal, email, password: hashedPassword, direccion, numTelefono, modulos, activo, ultimoEnModificar: uId, fechaUltimaModificacion: Date.now() })
             .session(session);
 
         const usuarioActualizado = await Usuario.findById(usuario.id)
@@ -321,11 +329,13 @@ module.exports.actualizarOtrosPerfiles = async (req = request, res = response) =
 }
 
 module.exports.obtenerUsuarios = async (req = request, res = response) => {
-    const { esAdministrador, sucursalUsuario } = req;
+    const { esSuperUsuario, sucursalUsuario } = req;
     const queryParameters = req.query;
+    let count = 0;
+    let numberPerPage = 10;
+    let page = 1;
 
     try {
-        let usuarios = null;
         const params = filtrarQueryParams(queryParameters, [
             'nombres',
             'apellidoPaterno',
@@ -340,98 +350,75 @@ module.exports.obtenerUsuarios = async (req = request, res = response) => {
             'creador',
             'fechaCreacion',
             'ultimoEnModificar',
-            'fechaUltimaModificacion'
+            'fechaUltimaModificacion',
+            'page'
         ]);
 
-        if (esAdministrador && params?.sucursal && params?.sucursal !== sucursalUsuario) {
+        if (!esSuperUsuario && params?.sucursal && params?.sucursal !== sucursalUsuario) {
             return res.status(401).json({
                 ok: false,
                 message: 'Sin acceso a ésa sucursal'
             });
         }
 
-        if (esAdministrador) {
+        if (!esSuperUsuario) {
             params.sucursal = sucursalUsuario;
+        }
 
-            usuarios = await Usuario.find(params)
-                .select('-password')
-                .populate({
+        if (params.page) {
+            page = params.page;
+            delete params.page;
+        }
+
+        count = await Usuario.find(params).countDocuments();
+
+        const pagesCanBeGenerated = Math.ceil((count / numberPerPage));
+
+        if (!/^\d*$/.test(page) || page < 1 || page > pagesCanBeGenerated) {
+            page = 1;
+        }
+
+        const usuarios = await Usuario.find(params)
+            .sort({ fechaCreacion: 1 })
+            .skip(((page - 1) * numberPerPage))
+            .limit(numberPerPage)
+            .select('-password')
+            .populate({
+                path: 'rol',
+                options: {
+                    transform: transformarDatosPopulateRol
+                }
+            })
+            .populate({
+                path: 'sucursal',
+                options: {
+                    transform: transformarDatosPopulatedSucursal
+                }
+            })
+            .populate({
+                path: 'creador',
+                options: {
+                    transform: transformarDatosPopulatedUsuario
+                },
+                populate: {
                     path: 'rol',
                     options: {
                         transform: transformarDatosPopulateRol
                     }
-                })
-                .populate({
-                    path: 'sucursal',
-                    options: {
-                        transform: transformarDatosPopulatedSucursal
-                    }
-                })
-                .populate({
-                    path: 'creador',
-                    options: {
-                        transform: transformarDatosPopulatedUsuario
-                    },
-                    populate: {
-                        path: 'rol',
-                        options: {
-                            transform: transformarDatosPopulateRol
-                        }
-                    }
-                })
-                .populate({
-                    path: 'ultimoEnModificar',
-                    options: {
-                        transform: transformarDatosPopulatedUsuario
-                    },
-                    populate: {
-                        path: 'rol',
-                        options: {
-                            transform: transformarDatosPopulateRol
-                        }
-                    }
-                });
-        }
-        else {
-            usuarios = await Usuario.find(params)
-                .select('-password')
-                .populate({
+                }
+            })
+            .populate({
+                path: 'ultimoEnModificar',
+                options: {
+                    transform: transformarDatosPopulatedUsuario
+                },
+                populate: {
                     path: 'rol',
                     options: {
                         transform: transformarDatosPopulateRol
                     }
-                })
-                .populate({
-                    path: 'sucursal',
-                    options: {
-                        transform: transformarDatosPopulatedSucursal
-                    }
-                })
-                .populate({
-                    path: 'creador',
-                    options: {
-                        transform: transformarDatosPopulatedUsuario
-                    },
-                    populate: {
-                        path: 'rol',
-                        options: {
-                            transform: transformarDatosPopulateRol
-                        }
-                    }
-                })
-                .populate({
-                    path: 'ultimoEnModificar',
-                    options: {
-                        transform: transformarDatosPopulatedUsuario
-                    },
-                    populate: {
-                        path: 'rol',
-                        options: {
-                            transform: transformarDatosPopulateRol
-                        }
-                    }
-                });
-        }
+                }
+            });
 
         if (usuarios.length === 0) {
             return res.status(404).json({
@@ -442,6 +429,8 @@ module.exports.obtenerUsuarios = async (req = request, res = response) => {
 
         res.status(200).json({
             ok: true,
+            count,
+            pagesCanBeGenerated,
             usuarios
         });
 
@@ -457,12 +446,12 @@ module.exports.obtenerUsuarios = async (req = request, res = response) => {
 
 module.exports.obtenerUsuarioPorId = async (req = request, res = response) => {
     const { id: idUsuario } = req.params;
-    const { uId, esAdministrador, sucursalUsuario } = req;
+    const { esSuperUsuario, sucursalUsuario } = req;
 
     try {
         let usuario;
 
-        if (esAdministrador) {
+        if (!esSuperUsuario) {
             usuario = await Usuario.findOne({ _id: idUsuario, sucursal: sucursalUsuario })
                 .select('-password')
                 .populate({

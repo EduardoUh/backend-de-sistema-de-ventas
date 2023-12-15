@@ -200,14 +200,22 @@ module.exports.obtenerSucursalPorId = async (req = request, res = response) => {
 
 module.exports.obtenerSucursales = async (req = request, res = response) => {
     const queryParams = req.query;
-    const { esAdministrador, sucursalUsuario } = req;
+    const { esSuperUsuario, sucursalUsuario } = req;
+    let sucursales = null;
+    const numberPerPage = 10;
+    let count = 0;
+    let page = 1;
+    let pagesCanBeGenerated = 0;
 
     try {
-        const params = filtrarQueryParams(queryParams, ['nombre', 'ciudad', 'direccion', 'email', 'activa', 'creador', 'fechaCreacion', 'ultimoEnModificar', 'fechaUltimaModificacion']);
+        const params = filtrarQueryParams(queryParams, ['nombre', 'ciudad', 'direccion', 'email', 'activa', 'creador', 'fechaCreacion', 'ultimoEnModificar', 'fechaUltimaModificacion', 'page']);
 
-        let sucursales = null;
+        if (params.page) {
+            page = params.page;
+            delete params.page;
+        }
 
-        if (esAdministrador) {
+        if (!esSuperUsuario) {
             params._id = sucursalUsuario;
             sucursales = await Sucursal.find(params)
                 .populate({
@@ -236,7 +244,22 @@ module.exports.obtenerSucursales = async (req = request, res = response) => {
                 });
         }
         else {
+            if (!page || page < 1 || !/^\d*$/.test(page)) {
+                page = 1;
+            }
+
+            count = await Sucursal.find(params).countDocuments();
+
+            pagesCanBeGenerated = Math.ceil((count / numberPerPage));
+
+            if (page > pagesCanBeGenerated) {
+                page = 1;
+            }
+
             sucursales = await Sucursal.find(params)
+                .sort({ fechaCreacion: 1 })
+                .skip(((page - 1) * numberPerPage))
+                .limit(numberPerPage)
                 .populate({
                     path: 'creador',
                     options: {
@@ -272,6 +295,8 @@ module.exports.obtenerSucursales = async (req = request, res = response) => {
 
         res.status(200).json({
             ok: true,
+            count: esSuperUsuario ? count : 1,
+            pagesCanBeGenerated,
             sucursales
         });
 

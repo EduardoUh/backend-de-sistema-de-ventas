@@ -1,5 +1,5 @@
 const { request, response } = require('express');
-const { StockProductos } = require('../models/index.js');
+const { StockProductos } = require('../../models/index.js');
 
 
 module.exports.revisarStockProductoYaExiste = async (req = request, res = response, next) => {

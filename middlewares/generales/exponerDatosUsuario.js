@@ -1,12 +1,14 @@
 const { request, response } = require('express');
-const { Usuario } = require('../models/index.js');
+const { Usuario } = require('../../models/index.js');
 
 
 module.exports.exponerDatosUsuario = async (req = request, res = response, next) => {
     const { uId } = req;
     try {
         const usuario = await Usuario.findById(uId)
-            .populate('rol');
+            .select('rol sucursal activo modulos -_id')
+            .populate('rol', 'rol -_id')
+            .populate('sucursal', 'activa _id');
 
         if (!usuario) {
             return res.status(404).json({
@@ -15,10 +17,18 @@ module.exports.exponerDatosUsuario = async (req = request, res = response, next)
             });
         }
 
+        if (!usuario.activo || usuario.sucursal?.activa === false) {
+            return res.status(401).json({
+                ok: false,
+                message: 'El usuario o la sucursal se encuentran desactivados'
+            });
+        }
+
         req.esSuperUsuario = usuario.rol.rol === 'SUPER USUARIO' ? true : false;
         req.esAdministrador = usuario.rol.rol === 'ADMINISTRADOR' ? true : false;
         req.esVendedor = usuario.rol.rol === 'VENDEDOR' ? true : false;
         req.sucursalUsuario = usuario.sucursal ? usuario.sucursal._id.toHexString() : null;
+        req.modulos = usuario.modulos;
 
         next();
 

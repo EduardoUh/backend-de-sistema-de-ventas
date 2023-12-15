@@ -6,13 +6,13 @@ const { Producto, Sucursal, StockProductos } = require('../models/index.js');
 
 module.exports.crearStockProducto = async (req = request, res = response) => {
     const { producto: productoId, sucursal: sucursalId, existencia, precio } = req.body;
-    const { uId, esAdministrador, sucursalUsuario } = req;
+    const { uId, esSuperUsuario, sucursalUsuario } = req;
     let session = null;
 
     try {
         session = await startSession();
 
-        if (esAdministrador && sucursalUsuario !== sucursalId) {
+        if (!esSuperUsuario && sucursalUsuario !== sucursalId) {
             return res.status(401).json({
                 ok: false,
                 message: 'Sin acceso a ésta sucursal'
@@ -116,7 +116,7 @@ module.exports.crearStockProducto = async (req = request, res = response) => {
 module.exports.actualizarStock = async (req = request, res = response) => {
     const { existencia, precio } = req.body;
     const { id: stockId } = req.params;
-    const { uId, esAdministrador, sucursalUsuario } = req;
+    const { uId, esSuperUsuario, sucursalUsuario } = req;
     let session = null;
 
     try {
@@ -140,7 +140,7 @@ module.exports.actualizarStock = async (req = request, res = response) => {
             });
         }
 
-        if (esAdministrador && sucursalUsuario !== stockProducto.sucursal._id.toHexString()) {
+        if (!esSuperUsuario && sucursalUsuario !== stockProducto.sucursal._id.toHexString()) {
             return res.status(401).json({
                 ok: false,
                 message: 'Sin acceso a ésta sucursal'
@@ -225,95 +225,78 @@ module.exports.actualizarStock = async (req = request, res = response) => {
 
 module.exports.obtenerResgistrosStock = async (req = request, res = response) => {
     const queryParams = req.query;
-    const { esAdministrador, sucursalUsuario } = req;
+    const { esSuperUsuario, sucursalUsuario } = req;
+    let stockProductos;
+    const numberPerPage = 10;
+    let page = 1;
 
     try {
-        let stockProductos;
+        if (!esSuperUsuario && queryParams.sucursal && queryParams.sucursal !== sucursalUsuario) {
+            return res.status(401).json({
+                ok: false,
+                message: 'Sin ácceso a ésa sucursal'
+            });
+        }
 
-        if (esAdministrador) {
-            const params = filtrarQueryParams(queryParams, ['producto', 'existencia', 'precio', 'creador', 'fechaCreacion', 'ultimoEnModificar', 'fechaUltimaModificacion']);
+        const params = filtrarQueryParams(queryParams, ['producto', 'sucursal', 'existencia', 'precio', 'creador', 'fechaCreacion', 'ultimoEnModificar', 'fechaUltimaModificacion', 'page']);
 
+        if (!esSuperUsuario) {
             params.sucursal = sucursalUsuario;
-
-            stockProductos = await StockProductos.find(params)
-                .populate({
-                    path: 'producto',
-                    options: {
-                        transform: transformarDatosPopulatedProducto
-                    }
-                })
-                .populate({
-                    path: 'sucursal',
-                    options: {
-                        transform: transformarDatosPopulatedSucursal
-                    }
-                })
-                .populate({
-                    path: 'creador',
-                    options: {
-                        transform: transformarDatosPopulatedUsuario
-                    },
-                    populate: {
-                        path: 'rol',
-                        options: {
-                            transform: transformarDatosPopulateRol
-                        }
-                    }
-                })
-                .populate({
-                    path: 'ultimoEnModificar',
-                    options: {
-                        transform: transformarDatosPopulatedUsuario
-                    },
-                    populate: {
-                        path: 'rol',
-                        options: {
-                            transform: transformarDatosPopulateRol
-                        }
-                    }
-                });
         }
-        else {
-            const params = filtrarQueryParams(queryParams, ['producto', 'sucursal', 'existencia', 'precio', 'creador', 'fechaCreacion', 'ultimoEnModificar', 'fechaUltimaModificacion']);
 
-            stockProductos = await StockProductos.find(params)
-                .populate({
-                    path: 'producto',
-                    options: {
-                        transform: transformarDatosPopulatedProducto
-                    }
-                })
-                .populate({
-                    path: 'sucursal',
-                    options: {
-                        transform: transformarDatosPopulatedSucursal
-                    }
-                })
-                .populate({
-                    path: 'creador',
-                    options: {
-                        transform: transformarDatosPopulatedUsuario
-                    },
-                    populate: {
-                        path: 'rol',
-                        options: {
-                            transform: transformarDatosPopulateRol
-                        }
-                    }
-                })
-                .populate({
-                    path: 'ultimoEnModificar',
-                    options: {
-                        transform: transformarDatosPopulatedUsuario
-                    },
-                    populate: {
-                        path: 'rol',
-                        options: {
-                            transform: transformarDatosPopulateRol
-                        }
-                    }
-                });
+        if (params.page) {
+            page = params.page;
+            delete params.page;
         }
+
+        const count = await StockProductos.find(params).countDocuments();
+
+        const pagesCanBeGenerated = Math.ceil((count / numberPerPage));
+
+        if (!/^\d*$/.test(page) || page < 1 || page > pagesCanBeGenerated) {
+            page = 1;
+        }
+
+        stockProductos = await StockProductos.find(params)
+            .sort({ fechaCreacion: 1 })
+            .skip(((page - 1) * numberPerPage))
+            .limit(numberPerPage)
+            .populate({
+                path: 'producto',
+                options: {
+                    transform: transformarDatosPopulatedProducto
+                }
+            })
+            .populate({
+                path: 'sucursal',
+                options: {
+                    transform: transformarDatosPopulatedSucursal
+                }
+            })
+            .populate({
+                path: 'creador',
+                options: {
+                    transform: transformarDatosPopulatedUsuario
+                },
+                populate: {
+                    path: 'rol',
+                    options: {
+                        transform: transformarDatosPopulateRol
+                    }
+                }
+            })
+            .populate({
+                path: 'ultimoEnModificar',
+                options: {
+                    transform: transformarDatosPopulatedUsuario
+                },
+                populate: {
+                    path: 'rol',
+                    options: {
+                        transform: transformarDatosPopulateRol
+                    }
+                }
+            });
 
         if (stockProductos.length === 0) {
             return res.status(404).json({
@@ -324,6 +307,8 @@ module.exports.obtenerResgistrosStock = async (req = request, res = response) =>
 
         res.status(200).json({
             ok: true,
+            count,
+            pagesCanBeGenerated,
             stockProductos
         });
 
@@ -339,17 +324,30 @@ module.exports.obtenerResgistrosStock = async (req = request, res = response) =>
 
 module.exports.obtenerResgistrosStockParaVenta = async (req = request, res = response) => {
     const { id: sucursalId } = req.params;
-    const { esAdministrador, esVendedor, sucursalUsuario } = req;
+    const { esSuperUsuario, sucursalUsuario } = req;
+    const numberPerPage = 10;
+    let { page } = req.query;
 
     try {
-        if (esAdministrador && sucursalUsuario !== sucursalId || esVendedor && sucursalUsuario !== sucursalId) {
+        if (!esSuperUsuario && sucursalUsuario !== sucursalId) {
             return res.status(401).json({
                 ok: false,
                 message: 'Sin acceso a ésa sucursal'
             });
         }
 
+        const count = await StockProductos.find({ sucursal: sucursalId, existencia: { $gt: 0 } }).countDocuments();
+
+        const pagesCanBeGenerated = Math.ceil((count / numberPerPage));
+
+        if (!/^\d*$/.test(page) || page < 1 || page > pagesCanBeGenerated) {
+            page = 1;
+        }
+
         let stockProductos = await StockProductos.find({ sucursal: sucursalId, existencia: { $gt: 0 } })
+            .sort({ fechaCreacion: 1 })
+            .skip(((page - 1) * numberPerPage))
+            .limit(numberPerPage)
             .select('-creador -fechaCreacion -ultimoEnModificar -fechaUltimaModificacion')
             .populate({
                 path: 'producto',
@@ -375,6 +373,8 @@ module.exports.obtenerResgistrosStockParaVenta = async (req = request, res = res
 
         res.status(200).json({
             ok: true,
+            count,
+            pagesCanBeGenerated,
             stockProductos
         });
 
@@ -390,7 +390,7 @@ module.exports.obtenerResgistrosStockParaVenta = async (req = request, res = res
 
 module.exports.obtenerStockPorId = async (req = request, res = response) => {
     const { id: stockId } = req.params;
-    const { esAdministrador, sucursalUsuario } = req;
+    const { esSuperUsuario, sucursalUsuario } = req;
 
     try {
         const stock = await StockProductos.findById(stockId)
@@ -438,7 +438,7 @@ module.exports.obtenerStockPorId = async (req = request, res = response) => {
             });
         }
 
-        if (esAdministrador && sucursalUsuario !== stock.sucursal.id.toString()) {
+        if (!esSuperUsuario && sucursalUsuario !== stock.sucursal.id.toString()) {
             return res.status(401).json({
                 ok: false,
                 message: 'Sin acceso al stock de ésa sucursal'

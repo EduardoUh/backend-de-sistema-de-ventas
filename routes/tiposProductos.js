@@ -1,6 +1,6 @@
 const express = require('express');
 const { body, param } = require('express-validator');
-const { verificarToken, exponerDatosUsuario, permitirSuperUsuariosYAdministradores, manejarResultados, revisarTipoProductoYaExiste } = require('../middlewares/index.js');
+const { verificarToken, exponerDatosUsuario, verificarPermisosModuloTiposProductos, manejarResultados, revisarTipoProductoYaExiste } = require('../middlewares/index.js');
 const { crearTipoProducto, actualizarTipoProducto, obtenerTiposProductos, obtenerTipoProductoPorId } = require('../controllers/tiposProductos.js');
 
 
@@ -30,7 +30,7 @@ const validadorId = () => param('id')
 tiposProductosRouter.post('/tiposProductos',
     verificarToken,
     exponerDatosUsuario,
-    permitirSuperUsuariosYAdministradores,
+    verificarPermisosModuloTiposProductos,
     [
         validadorTipoProducto(),
         validadorDescripcion()
@@ -43,7 +43,7 @@ tiposProductosRouter.post('/tiposProductos',
 tiposProductosRouter.put('/tiposProductos/:id',
     verificarToken,
     exponerDatosUsuario,
-    permitirSuperUsuariosYAdministradores,
+    verificarPermisosModuloTiposProductos,
     [
         validadorTipoProducto(),
         validadorDescripcion(),
@@ -57,14 +57,14 @@ tiposProductosRouter.put('/tiposProductos/:id',
 tiposProductosRouter.get('/tiposProductos',
     verificarToken,
     exponerDatosUsuario,
-    permitirSuperUsuariosYAdministradores,
+    verificarPermisosModuloTiposProductos,
     obtenerTiposProductos
 );
 
 tiposProductosRouter.get('/tiposProductos/:id',
     verificarToken,
     exponerDatosUsuario,
-    permitirSuperUsuariosYAdministradores,
+    verificarPermisosModuloTiposProductos,
     validadorId(),
     manejarResultados,
     obtenerTipoProductoPorId
