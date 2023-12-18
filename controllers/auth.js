@@ -115,7 +115,8 @@ module.exports.renovarToken = async (req = request, res = response) => {
                 rol: usuario.rol.rol,
                 id: usuario.id,
                 sucursalId: usuario.sucursal ? usuario.sucursal._id.toHexString() : null,
-                sucursalNombre: usuario.sucursal ? usuario.sucursal.nombre : null
+                sucursalNombre: usuario.sucursal ? usuario.sucursal.nombre : null,
+                modulos: usuario.modulos
             },
             token,
             fechaCreacionToken: `${new Date(iat * 1000).getDate()}/${new Date(iat * 1000).getMonth() + 1}/${new Date(iat * 1000).getHours()}:${new Date(iat * 1000).getMinutes()}`,
