@@ -55,13 +55,10 @@ Backend of a sales system made for practice purposes.
 * Middleware to verify the authentication token of the user.
 * Middleware to verify if the author of the request is a registered user.
 * Middleware to verify the user credentials over the endpoint.
-* Verificación de los datos del body de las peticiones de creación y actualización.
-* Verify the data of the __create__ and __update_ requests body.
-* Resultados paginados para las operaciones de obtención.
+* Verification of the data of the __create__ and __update__ requests body.
 * __Paginated results__ in the __get__ requests.
 * __Create__, __update__ and __get__ operations over users, branches, providers, clients, products, stock by branch.
 * Asign __roles__, __permissions__ and __branches__ to users.
-* Operaciones de creado y obtención de compras, ventas y pagos por venta.
 * __Create__ and __get__ operations over __sales__ and __payments per sale__.
 
 ## **Steps to get the server running**
