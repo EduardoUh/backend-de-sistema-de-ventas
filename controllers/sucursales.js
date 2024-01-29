@@ -205,7 +205,7 @@ module.exports.obtenerSucursales = async (req = request, res = response) => {
     const numberPerPage = 10;
     let count = 0;
     let page = 1;
-    let pagesCanBeGenerated = 0;
+    let pagesCanBeGenerated = 1;
 
     try {
         const params = filtrarQueryParams(queryParams, ['nombre', 'ciudad', 'direccion', 'email', 'activa', 'creador', 'fechaCreacion', 'ultimoEnModificar', 'fechaUltimaModificacion', 'page']);
