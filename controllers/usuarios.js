@@ -1,9 +1,8 @@
 const { request, response } = require('express');
-const { startSession } = require('mongoose');
+const { startSession, isObjectIdOrHexString } = require('mongoose');
 const { Usuario, Rol, Sucursal } = require('../models/index.js');
-const { hash, compare } = require('bcrypt');
+const { hash } = require('bcrypt');
 const { transformarDatosPopulateRol, transformarDatosPopulatedSucursal, transformarDatosPopulatedUsuario, filtrarQueryParams } = require('../helpers/index.js');
-const { param } = require('express-validator');
 
 
 module.exports.crearUsuario = async (req = request, res = response) => {
@@ -16,7 +15,7 @@ module.exports.crearUsuario = async (req = request, res = response) => {
 
         const promises = [Rol.findById(body.rol)];
 
-        if (body.sucursal) {
+        if (body.sucursal && isObjectIdOrHexString(body.sucursal)) {
             promises.push(Sucursal.findById(body.sucursal));
         }
 
@@ -57,7 +56,7 @@ module.exports.crearUsuario = async (req = request, res = response) => {
             });
         }
 
-        if (rol.rol === 'SUPER USUARIO' && body.sucursal) {
+        if (rol.rol === 'SUPER USUARIO') {
             delete body.sucursal;
         }
 
@@ -140,8 +139,11 @@ module.exports.actualizarMiPerfil = async (req = request, res = response) => {
     const { id } = req.params;
     const { uId } = req;
     let hashedPassword = null;
+    let session = null;
 
     try {
+        session = await startSession();
+
         if (uId !== id) {
             return res.status(401).json({
                 ok: false,
@@ -149,7 +151,17 @@ module.exports.actualizarMiPerfil = async (req = request, res = response) => {
             });
         }
 
-        const [usuario, usuarioEmail, usuarioRfc] = await Promise.all([Usuario.findById(id), Usuario.findOne({ email }), Usuario.findOne({ rfc })]);
+        const [usuario, usuarioEmail, usuarioRfc] = await Promise.all([
+            Usuario.findById(id)
+                .populate({
+                    path: 'rol',
+                    select: 'rol -_id'
+                })
+                .populate({
+                    path: 'sucursal'
+                }),
+            Usuario.findOne({ email }),
+            Usuario.findOne({ rfc })]);
 
         if (!usuario) {
             return res.status(404).json({
@@ -172,20 +184,56 @@ module.exports.actualizarMiPerfil = async (req = request, res = response) => {
             hashedPassword = usuario.password;
         }
 
-        await usuario.updateOne({ nombres, apellidoPaterno, apellidoMaterno, rfc, email, password: hashedPassword, direccion, numTelefono, ultimoEnModificar: uId, fechaUltimaModificacion: Date.now() });
+        session.startTransaction();
+
+        await usuario.updateOne({ nombres, apellidoPaterno, apellidoMaterno, rfc, email, password: hashedPassword, direccion, numTelefono, ultimoEnModificar: uId, fechaUltimaModificacion: Date.now() }).session(session);
+
+        const updatedUser = await Usuario.findById(id)
+            .populate({
+                path: 'rol',
+                select: 'rol -_id'
+            })
+            .populate({
+                path: 'sucursal'
+            }).session(session);
+
+        await session.commitTransaction();
 
         res.status(200).json({
             ok: true,
-            message: 'Has actualizado tu información correctamente'
+            message: 'Has actualizado tu información correctamente',
+            usuario: {
+                nombres: updatedUser.nombres,
+                apellidoPaterno: updatedUser.apellidoPaterno,
+                apellidoMaterno: updatedUser.apellidoMaterno,
+                email: updatedUser.email,
+                rfc: updatedUser.rfc,
+                direccion: updatedUser.direccion,
+                numTelefono: updatedUser.numTelefono,
+                rol: updatedUser.rol.rol,
+                id: updatedUser.id,
+                sucursalId: updatedUser.sucursal ? updatedUser.sucursal._id.toHexString() : null,
+                sucursalNombre: updatedUser.sucursal ? updatedUser.sucursal.nombre : null,
+                modulos: updatedUser.modulos
+            }
         });
 
     } catch (error) {
+        if (session?.transaction?.isActive) {
+            await session.abortTransaction();
+        }
+
         console.log(error);
 
         res.status(500).json({
             ok: false,
             message: 'Algo salió mal al actualizar los datos, intente de nuevo y si el fallo persiste contacte al administrador'
         });
+    }
+    finally {
+        if (session) {
+            await session.endSession();
+        }
     }
 }
 
@@ -213,19 +261,33 @@ module.exports.actualizarOtrosPerfiles = async (req = request, res = response) =
             });
         }
 
-        const [usuario, usuarioEmail, usuarioRfc, rolDb, sucursalDb] = await Promise.all([
+        const promises = [
             Usuario.findById(usuarioId)
                 .populate('rol'),
             Usuario.findOne({ email }),
             Usuario.findOne({ rfc }),
-            Rol.findById(rol),
-            Sucursal.findById(sucursal)
-        ]);
+            Rol.findById(rol)
+        ];
 
-        if (!usuario || !rolDb || !sucursalDb) {
+        if (sucursal && isObjectIdOrHexString(sucursal)) {
+            promises.push(
+                Sucursal.findById(sucursal)
+            );
+        }
+
+        const [usuario, usuarioEmail, usuarioRfc, rolDb, sucursalDb] = await Promise.all(promises);
+
+        if (!usuario || !rolDb) {
             return res.status(404).json({
                 ok: false,
-                message: 'Usuario, Sucursal o rol no encontrados'
+                message: 'Usuario o Sucursal no encontrados'
+            });
+        }
+
+        if (!esSuperUsuario && !sucursalDb || rolDb.rol !== 'SUPER USUARIO' && !sucursalDb) {
+            return res.status(401).json({
+                ok: false,
+                message: 'La sucursal es requerida'
             });
         }
 
