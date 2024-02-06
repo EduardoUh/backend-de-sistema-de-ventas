@@ -325,7 +325,7 @@ module.exports.obtenerResgistrosStock = async (req = request, res = response) =>
 module.exports.obtenerResgistrosStockParaVenta = async (req = request, res = response) => {
     const { id: sucursalId } = req.params;
     const { esSuperUsuario, sucursalUsuario } = req;
-    const numberPerPage = 10;
+    const numberPerPage = 6;
     let { page } = req.query;
 
     try {
@@ -362,7 +362,17 @@ module.exports.obtenerResgistrosStockParaVenta = async (req = request, res = res
                 }
             }).exec();
 
-        stockProductos = stockProductos.filter(stockProducto => stockProducto.sucursal.activa && stockProducto.producto.activo);
+        stockProductos = stockProductos.filter(stockProducto => stockProducto.sucursal.activa && stockProducto.producto.activo).map(stockProducto => {
+            return {
+                id: stockProducto.producto.id,
+                nombre: stockProducto.producto.nombre,
+                descripcion: stockProducto.producto.descripcion,
+                ventaPor: stockProducto.producto.ventaPor,
+                activo: stockProducto.producto.activo,
+                existencia: Number(stockProducto.existencia),
+                precio: stockProducto.precio
+            }
+        });
 
         if (stockProductos.length === 0) {
             return res.status(404).json({
