@@ -1,4 +1,5 @@
 module.exports.transformarDatosPopulateRol = (documento) => {
-    const { rol } = documento.toObject();
-    return rol;
+    const { rol, _id } = documento.toObject();
+
+    return {rol, id: _id};
 }

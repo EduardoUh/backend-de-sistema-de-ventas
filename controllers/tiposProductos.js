@@ -180,7 +180,19 @@ module.exports.obtenerTiposProductos = async (req = request, res = response) => 
         const tiposProductos = await TipoProducto.find(params)
             .sort({ fechaCreacion: 1 })
             .skip(((page - 1) * numberPerPage))
-            .limit(numberPerPage);
+            .limit(numberPerPage)
+            .populate({
+                path: 'creador',
+                options: {
+                    transform: transformarDatosPopulatedUsuario
+                }
+            })
+            .populate({
+                path: 'ultimoEnModificar',
+                options: {
+                    transform: transformarDatosPopulatedUsuario
+                }
+            });
 
         if (tiposProductos.length === 0) {
             return res.status(404).json({
