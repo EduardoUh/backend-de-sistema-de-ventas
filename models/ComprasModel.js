@@ -23,15 +23,7 @@ const compraSchema = new Schema({
             ref: 'Productos',
             required: true
         },
-        precioSinImpuesto: {
-            type: Number,
-            required: true
-        },
-        impuesto: {
-            type: Number,
-            required: true
-        },
-        precioConImpuesto: {
+        precioCompra: {
             type: Number,
             required: true
         },

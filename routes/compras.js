@@ -29,14 +29,12 @@ const validadorArticulos = () => body('articulos')
     .isArray({ min: 1 }).withMessage('El campo articulos debe contener al menos un artículo')
     .custom((value) => {
         for (const item of value) {
-            if (Object.keys(item).length !== 6) {
+            if (Object.keys(item).length !== 4) {
                 return false;
             }
 
             if (!item.producto || !isObjectIdOrHexString(item.producto)
-                || !item.precioSinImpuesto || !tieneDosDecimales(item.precioSinImpuesto)
-                || !item.impuesto || !tieneDosDecimales(item.impuesto)
-                || !item.precioConImpuesto || !tieneDosDecimales(item.precioConImpuesto)
+                || !item.precioCompra || !tieneDosDecimales(item.precioCompra)
                 || !item.precioVenta || !tieneDosDecimales(item.precioVenta)
                 || !item.cantidad || !tieneDosDecimales(item.cantidad)
             ) {
@@ -45,7 +43,7 @@ const validadorArticulos = () => body('articulos')
         }
 
         return true;
-    }).withMessage('Alguno de los siguientes datos de los artículos es erroneo: producto, precio sin impuesto, impuesto, precio con impuesto, precio venta,cantidad');
+    }).withMessage('Alguno de los siguientes datos de los artículos es erroneo: producto, precio compra, precio venta o cantidad');
 
 const validadorTotal = () => body('total')
     .exists().withMessage('El campo total es requerido')
