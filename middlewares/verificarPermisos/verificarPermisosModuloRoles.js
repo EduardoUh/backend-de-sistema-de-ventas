@@ -7,14 +7,10 @@ module.exports.verificarPermisosModuloRoles = (req = request, res = response, ne
     try {
         const moduloUsuarios = modulos.find(modulo => modulo.nombre === 'USUARIOS');
 
-        if (!moduloUsuarios) {
-            return res.status(401).json({
-                ok: false,
-                message: 'Sin acceso al módulo de roles'
-            });
-        }
-
-        if (method === 'GET' && !moduloUsuarios.permisos.find(permiso => permiso === 'CREAR')) {
+        if (
+            (method === 'GET' && !moduloUsuarios?.permisos?.find(permiso => permiso === 'CREAR')) &&
+            (method === 'GET' && !moduloUsuarios?.permisos?.find(permiso => permiso === 'VER'))
+        ) {
             return res.status(401).json({
                 ok: false,
                 message: 'Sin las credenciales necesarias para ésta acción'
