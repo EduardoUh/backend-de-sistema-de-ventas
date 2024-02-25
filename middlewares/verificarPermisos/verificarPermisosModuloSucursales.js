@@ -7,28 +7,29 @@ module.exports.verificarPermisosModuloSucursales = (req = request, res = respons
     try {
         const moduloSucursales = modulos.find(modulo => modulo.nombre === 'SUCURSALES');
 
-        if (!moduloSucursales) {
-            return res.status(401).json({
-                ok: false,
-                message: 'Sin acceso al módulo de sucursales'
-            });
-        }
-
-        if (method === 'POST' && !moduloSucursales.permisos.find(permiso => permiso === 'CREAR')) {
+        if (method === 'POST' && !moduloSucursales?.permisos?.find(permiso => permiso === 'CREAR')) {
             return res.status(401).json({
                 ok: false,
                 message: 'Sin las credenciales necesarias para ésta acción'
             });
         }
 
-        if (method === 'PUT' && !moduloSucursales.permisos.find(permiso => permiso === 'ACTUALIZAR')) {
+        if (method === 'PUT' && !moduloSucursales?.permisos?.find(permiso => permiso === 'ACTUALIZAR')) {
             return res.status(401).json({
                 ok: false,
                 message: 'Sin las credenciales necesarias para ésta acción'
             });
         }
 
-        if (method === 'GET' && !moduloSucursales.permisos.find(permiso => permiso === 'VER')) {
+        if (
+            (method === 'GET' && !moduloSucursales?.permisos?.find(permiso => permiso === 'VER')) &&
+            (method === 'GET' && !modulos?.find(modulo => modulo.nombre === 'USUARIOS')) &&
+            (method === 'GET' && !modulos?.find(modulo => modulo.nombre === 'STOCK')) &&
+            (method === 'GET' && !modulos?.find(modulo => modulo.nombre === 'COMPRAS')) &&
+            (method === 'GET' && !modulos?.find(modulo => modulo.nombre === 'CREAR COMPRA')) &&
+            (method === 'GET' && !modulos?.find(modulo => modulo.nombre === 'CREAR VENTA')) &&
+            (method === 'GET' && !modulos?.find(modulo => modulo.nombre === 'VENTAS'))
+        ) {
             return res.status(401).json({
                 ok: false,
                 message: 'Sin las credenciales necesarias para ésta acción'

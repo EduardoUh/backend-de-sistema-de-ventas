@@ -8,6 +8,7 @@ module.exports.verificarPermisosModuloProveedores = (req = request, res = respon
         const moduloProveedores = modulos.find(modulo => modulo.nombre === 'PROVEEDORES');
         const moduloProductos = modulos.find(modulo => modulo.nombre === 'PRODUCTOS');
         const moduloCrearCompra = modulos.find(modulo => modulo.nombre === 'CREAR COMPRA');
+        const moduloCompras = modulos.find(modulo => modulo.nombre === 'COMPRAS');
 
         if (!moduloProveedores && !moduloProductos && !moduloCrearCompra) {
             return res.status(401).json({
@@ -30,7 +31,12 @@ module.exports.verificarPermisosModuloProveedores = (req = request, res = respon
             });
         }
 
-        if ((method === 'GET' && !moduloProveedores?.permisos?.find(permiso => permiso === 'VER')) && (method === 'GET' && !moduloProductos?.permisos?.find(permiso => permiso === 'CREAR')) && (method === 'GET' && !moduloCrearCompra?.permisos?.find(permiso => permiso === 'CREAR'))) {
+        if (
+            (method === 'GET' && !moduloProveedores?.permisos?.find(permiso => permiso === 'VER')) &&
+            (method === 'GET' && !moduloProductos) &&
+            (method === 'GET' && !moduloCompras) &&
+            (method === 'GET' && !moduloCrearCompra?.permisos?.find(permiso => permiso === 'CREAR'))
+        ) {
             return res.status(401).json({
                 ok: false,
                 message: 'Sin las credenciales necesarias para ésta acción'

@@ -30,7 +30,11 @@ module.exports.verificarPermisosModuloProductos = (req = request, res = response
             });
         }
 
-        if ((method === 'GET' && !moduloProductos?.permisos?.find(permiso => permiso === 'VER')) && (method === 'GET' && !moduloStock?.permisos?.find(permiso => permiso === 'CREAR')) && (method === 'GET' && !moduloCrearCompra?.permisos?.find(permiso => permiso === 'CREAR'))) {
+        if ((method === 'GET' && !moduloProductos?.permisos?.find(permiso => permiso === 'VER')) &&
+            (method === 'GET' && !moduloStock?.permisos?.find(permiso => permiso === 'CREAR')) &&
+            (method === 'GET' && !moduloStock?.permisos?.find(permiso => permiso === 'VER')) &&
+            (method === 'GET' && !moduloCrearCompra?.permisos?.find(permiso => permiso === 'CREAR'))
+        ) {
             return res.status(401).json({
                 ok: false,
                 message: 'Sin las credenciales para ésta acción'
