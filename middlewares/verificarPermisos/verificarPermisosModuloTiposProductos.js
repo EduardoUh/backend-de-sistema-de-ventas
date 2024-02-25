@@ -29,7 +29,9 @@ module.exports.verificarPermisosModuloTiposProductos = (req = request, res = res
             });
         }
 
-        if ((method === 'GET' && !moduloTiposProductos?.permisos?.find(permiso => permiso === 'VER')) && (method === 'GET' && !moduloProductos?.permisos?.find(permiso => permiso === 'CREAR'))) {
+        if ((method === 'GET' && !moduloTiposProductos?.permisos?.find(permiso => permiso === 'VER')) &&
+            (method === 'GET' && !moduloProductos)
+        ) {
             return res.status(401).json({
                 ok: false,
                 message: 'Sin las credenciales necesarias para ésta acción'
